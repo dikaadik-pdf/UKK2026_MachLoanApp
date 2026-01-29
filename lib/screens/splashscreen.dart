@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/models/appcolors_models.dart';
-import 'package:ukk2026_machloanapp/screens/users/loginpage.dart';
+import 'package:ukk2026_machloanapp/screens/loginpage.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});

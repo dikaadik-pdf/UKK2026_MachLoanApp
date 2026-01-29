@@ -1,90 +1,38 @@
-class LoginModel {
+class UserModel {
+  final int? idUser;
   final String username;
-  final String password;
+  final String? role;
+  final String? password;
 
-  LoginModel({
+  UserModel({
+    this.idUser,
     required this.username,
-    required this.password,
+    this.role,
+    this.password,
   });
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      idUser: json['id_user'] is int
+          ? json['id_user']
+          : int.tryParse(json['id_user'].toString()),
+      username: json['username'] ?? '',
+      role: json['role'],
+      password: json['password'],
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
+      'id_user': idUser,
       'username': username,
+      'role': role,
       'password': password,
     };
   }
 
- 
-  factory LoginModel.fromJson(Map<String, dynamic> json) {
-    return LoginModel(
-      username: json['username'] ?? '',
-      password: json['password'] ?? '',
-    );
-  }
-
-
+  // ✅ TAMBAHKAN INI
   bool isValid() {
-    return username.isNotEmpty && password.isNotEmpty;
-  }
-}
-
-class LoginResponse {
-  final bool success;
-  final String message;
-  final String? token;
-  final UserData? userData;
-
-  LoginResponse({
-    required this.success,
-    required this.message,
-    this.token,
-    this.userData,
-  });
-
-  factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    return LoginResponse(
-      success: json['success'] ?? false,
-      message: json['message'] ?? '',
-      token: json['token'],
-      userData: json['user'] != null 
-          ? UserData.fromJson(json['user']) 
-          : null,
-    );
-  }
-}
-
-class UserData {
-  final String id;
-  final String username;
-  final String? email;
-  final String? fullName;
-  final String? role;
-
-  UserData({
-    required this.id,
-    required this.username,
-    this.email,
-    this.fullName,
-    this.role,
-  });
-
-  factory UserData.fromJson(Map<String, dynamic> json) {
-    return UserData(
-      id: json['id'] ?? '',
-      username: json['username'] ?? '',
-      email: json['email'],
-      fullName: json['full_name'],
-      role: json['role'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'username': username,
-      'email': email,
-      'full_name': fullName,
-      'role': role,
-    };
+    return username.isNotEmpty && (password?.isNotEmpty ?? false);
   }
 }
