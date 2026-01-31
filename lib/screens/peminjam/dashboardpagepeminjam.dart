@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:ukk2026_machloanapp/screens/admin/list_alat.dart';
-import 'package:ukk2026_machloanapp/screens/admin/peminjaman.dart';
-import 'package:ukk2026_machloanapp/screens/admin/logaktivitas.dart';
-import 'package:ukk2026_machloanapp/screens/admin/memberscreen.dart';
 import 'package:ukk2026_machloanapp/screens/admin/logoutpage.dart';
+import 'package:ukk2026_machloanapp/screens/peminjam/peminjaman_peminjam.dart';
 
-class DashboardScreenAdmin extends StatefulWidget {
+class DashboardScreenPeminjam extends StatefulWidget {
   final String username;
 
-  const DashboardScreenAdmin({super.key, required this.username});
+  const DashboardScreenPeminjam({super.key, required this.username});
 
   @override
-  State<DashboardScreenAdmin> createState() => _DashboardScreenState();
+  State<DashboardScreenPeminjam> createState() =>
+      _DashboardScreenPeminjamState();
 }
 
-class _DashboardScreenState extends State<DashboardScreenAdmin> {
+class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
   final List<double> weeklyData = [30, 12, 10, 20, 85, 40, 50];
   final List<String> weekDays = [
     'Sen',
@@ -33,7 +31,6 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
     return Scaffold(
       backgroundColor: const Color(0xFFECF0F1),
       endDrawer: _buildSidebar(context),
-
       body: SafeArea(
         child: Column(
           children: [
@@ -82,7 +79,8 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                         color: Colors.white,
                         size: 34,
                       ),
-                      onPressed: () => Scaffold.of(context).openEndDrawer(),
+                      onPressed: () =>
+                          Scaffold.of(context).openEndDrawer(),
                     ),
                   ),
                 ],
@@ -95,7 +93,6 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    // STAT CARDS
                     Row(
                       children: [
                         _buildStatCard('Total\nAlat', '20'),
@@ -105,9 +102,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                         _buildStatCard('Dipinjam', '5'),
                       ],
                     ),
-
                     const SizedBox(height: 25),
-
                     _buildChartSection(),
                   ],
                 ),
@@ -165,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
     );
   }
 
-  // ===== CHART SECTION =====
+  // ===== CHART =====
   Widget _buildChartSection() {
     return Container(
       width: double.infinity,
@@ -186,7 +181,8 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFF2F3A40),
               borderRadius: BorderRadius.circular(20),
@@ -200,9 +196,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
               ),
             ),
           ),
-
           const SizedBox(height: 18),
-
           Expanded(
             child: BarChart(
               BarChartData(
@@ -221,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
     );
   }
 
-  // ===== SIDEBAR (UPDATED) =====
+  // ===== SIDEBAR =====
   Widget _buildSidebar(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.transparent,
@@ -230,7 +224,8 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
         alignment: Alignment.topRight,
         child: Container(
           width: 280,
-          margin: const EdgeInsets.only(top: 40, right: 20, bottom: 40),
+          margin:
+              const EdgeInsets.only(top: 40, right: 20, bottom: 40),
           decoration: BoxDecoration(
             color: const Color(0xFF769DCB),
             borderRadius: BorderRadius.circular(25),
@@ -245,124 +240,70 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ===== CLOSE BUTTON =====
               Align(
                 alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 24),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                child: IconButton(
+                  icon: const Icon(Icons.close,
+                      color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
-
-              // ===== USER PROFILE SECTION =====
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Column(
-                  children: [
-                    // Avatar
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 45,
-                        color: Colors.white,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    // Username/Email
-                    Text(
-                      widget.username,
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Role Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Admin',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person,
+                    size: 45, color: Colors.white),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.username,
+                style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Peminjam',
+                  style: GoogleFonts.poppins(
+                      color: Colors.white, fontSize: 12),
                 ),
               ),
+              const Divider(color: Colors.white30),
+              _buildSidebarItem(Icons.dashboard, 'Dashboard',
+                  () => Navigator.pop(context)),
 
-              const SizedBox(height: 10),
-              const Divider(color: Colors.white30, thickness: 1, height: 1),
-              const SizedBox(height: 10),
-
-              // ===== MENU ITEMS =====
-              _buildSidebarItem(Icons.dashboard, 'Dashboard', () {
-                Navigator.pop(context);
-              }),
-
-              _buildSidebarItem(Icons.build, 'Daftar Alat', () {
+              _buildSidebarItem(Icons.build, 'Alat', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => AlatScreen(username: widget.username),
-                  ),
+                  MaterialPageRoute(builder: (_) => const PeminjamAlatScreen()),
                 );
               }),
-
+                  
               _buildSidebarItem(Icons.volunteer_activism, 'Peminjaman', () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PeminjamanScreen()),
-                );
-              }),
-
-              _buildSidebarItem(Icons.access_time, 'Log Aktivitas', () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LogAktivitasScreen()),
-                );
-              }),
-
-              _buildSidebarItem(Icons.person_add, 'Tambah Petugas', () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MemberScreen()),
-                );
               }),
 
               _buildSidebarItem(Icons.settings, 'Pengaturan', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AccountScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const AccountScreen()),
                 );
               }),
-
               const SizedBox(height: 15),
             ],
           ),
@@ -371,23 +312,19 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
     );
   }
 
-  Widget _buildSidebarItem(IconData icon, String title, VoidCallback onTap) {
+  Widget _buildSidebarItem(
+      IconData icon, String title, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 22),
+            Icon(icon, color: Colors.white),
             const SizedBox(width: 15),
-            Text(
-              title,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
+            Text(title,
+                style: GoogleFonts.poppins(color: Colors.white)),
           ],
         ),
       ),
@@ -395,49 +332,61 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
   }
 
   // ===== CHART HELPERS =====
-  List<BarChartGroupData> _buildBarGroups() => List.generate(
-    weeklyData.length,
-    (i) => BarChartGroupData(
-      x: i,
-      barRods: [
-        BarChartRodData(
-          toY: weeklyData[i],
-          color: const Color(0xFF769DCB),
-          width: 16,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ],
-    ),
-  );
+  List<BarChartGroupData> _buildBarGroups() =>
+      List.generate(weeklyData.length, (i) {
+        return BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: weeklyData[i],
+              color: const Color(0xFF769DCB),
+              width: 16,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        );
+      });
 
   FlTitlesData _buildChartTitles() => FlTitlesData(
-    bottomTitles: AxisTitles(
-      sideTitles: SideTitles(
-        showTitles: true,
-        getTitlesWidget: (v, _) => Text(
-          weekDays[v.toInt()],
-          style: const TextStyle(color: Colors.white70, fontSize: 10),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (v, _) {
+              final i = v.toInt();
+              if (i < 0 || i >= weekDays.length) {
+                return const SizedBox();
+              }
+              return Text(
+                weekDays[i],
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: 10),
+              );
+            },
+          ),
         ),
-      ),
-    ),
-    leftTitles: AxisTitles(
-      sideTitles: SideTitles(
-        showTitles: true,
-        reservedSize: 30,
-        getTitlesWidget: (v, _) => Text(
-          '${v.toInt()}',
-          style: const TextStyle(color: Colors.white70, fontSize: 10),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (v, _) => Text(
+              v.toInt().toString(),
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 10),
+            ),
+          ),
         ),
-      ),
-    ),
-    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-  );
+        topTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      );
 
   FlGridData _buildChartGrid() => FlGridData(
-    show: true,
-    drawVerticalLine: false,
-    getDrawingHorizontalLine: (v) =>
-        FlLine(color: Colors.white10, strokeWidth: 1, dashArray: [5, 5]),
-  );
+        show: true,
+        drawVerticalLine: false,
+        getDrawingHorizontalLine: (v) => FlLine(
+          color: Colors.white10,
+          strokeWidth: 1,
+          dashArray: [5, 5],
+        ),
+      );
 }

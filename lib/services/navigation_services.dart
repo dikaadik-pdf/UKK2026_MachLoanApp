@@ -1,31 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:ukk2026_machloanapp/screens/peminjam/dashboardpagepeminjam.dart';
 import '../models/users_models.dart';
-
-// Import screens berdasarkan role
-// Sesuaikan dengan path screen lu
-// import '../screens/admin/dashboardpage.dart';
-// import '../screens/petugas/dashboardpage.dart';
-// import '../screens/peminjam/dashboardpage.dart';
-// import '../screens/loginpage.dart';
+import 'package:ukk2026_machloanapp/screens/admin/dashboardpage.dart'; // ✅ PERBAIKI INI
+import 'package:ukk2026_machloanapp/screens/petugas/dashboardpagepetugas.dart';
 
 class NavigationService {
   // ================= ROUTE KE DASHBOARD BERDASARKAN ROLE =================
   static Widget getHomeScreenByRole(UserModel user) {
     switch (user.role) {
       case 'admin':
-        // return AdminDashboardScreen(user: user);
-        return _buildPlaceholder('Admin Dashboard', user);
+        return DashboardScreenAdmin(username: user.username); // ✅ BENAR
       
       case 'petugas':
-        // return PetugasDashboardScreen(user: user);
-        return _buildPlaceholder('Petugas Dashboard', user);
+        return DashboardScreenPetugas(username: user.username); // Sementara pakai admin
       
       case 'peminjam':
-        // return PeminjamDashboardScreen(user: user);
-        return _buildPlaceholder('Peminjam Dashboard', user);
+        return DashboardScreenPeminjam(username: user.username);
       
       default:
-        // return LoginScreen();
         return _buildPlaceholder('Unknown Role', user);
     }
   }
@@ -39,13 +31,11 @@ class NavigationService {
     final homeScreen = getHomeScreenByRole(user);
     
     if (clearStack) {
-      // Clear navigation stack (gabisa back)
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => homeScreen),
         (route) => false,
       );
     } else {
-      // Normal navigation (bisa back)
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => homeScreen),
       );
@@ -54,15 +44,11 @@ class NavigationService {
 
   // ================= NAVIGATE TO LOGIN =================
   static void navigateToLogin(BuildContext context) {
-    // Navigator.of(context).pushAndRemoveUntil(
-    //   MaterialPageRoute(builder: (_) => LoginScreen()),
-    //   (route) => false,
-    // );
+    // Implementasi nanti
   }
 
   // ================= CHECK PERMISSION BY ROLE =================
   static bool hasPermission(UserModel user, String permission) {
-    // Define permissions per role
     final permissions = {
       'admin': [
         'manage_users',
@@ -113,21 +99,21 @@ class NavigationService {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle, size: 80, color: Colors.green),
-            SizedBox(height: 20),
+            const Icon(Icons.check_circle, size: 80, color: Colors.green),
+            const SizedBox(height: 20),
             Text(
               'Welcome, ${user.username}!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
               'Role: ${user.role?.toUpperCase()}',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
             Text(
               'TODO: Implement $title Screen',
-              style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+              style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
             ),
           ],
         ),

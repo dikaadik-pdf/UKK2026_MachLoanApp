@@ -29,7 +29,7 @@ class SuccessDialog extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                fontSize: 40,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -39,7 +39,7 @@ class SuccessDialog extends StatelessWidget {
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 12,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,

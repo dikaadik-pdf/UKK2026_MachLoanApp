@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomFilterBar extends StatefulWidget {
   final List<String> filters;
@@ -28,18 +29,22 @@ class _CustomFilterBarState extends State<CustomFilterBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 45,
-      padding: const EdgeInsets.all(4),
+      // Tinggi ditambah sedikit agar teks tidak terasa sesak
+      height: 55, 
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(30),
+        color: const Color(0xFF1F4F6F), // Biru tua sesuai gambar
+        borderRadius: BorderRadius.circular(35),
       ),
-      child: Row(
-        children: widget.filters.map((filter) {
-          final isSelected = filter == selectedFilter;
+      child: SingleChildScrollView(
+        // INI KUNCINYA: Biar bisa digeser dan tidak error overflow
+        scrollDirection: Axis.horizontal, 
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: widget.filters.map((filter) {
+            final isSelected = filter == selectedFilter;
 
-          return Expanded(
-            child: GestureDetector(
+            return GestureDetector(
               onTap: () {
                 setState(() {
                   selectedFilter = filter;
@@ -47,29 +52,29 @@ class _CustomFilterBarState extends State<CustomFilterBar> {
                 widget.onFilterSelected?.call(filter);
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF769DCB)
+                      ? const Color(0xFF769DCB) // Biru muda saat dipilih
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(25),
                 ),
                 child: Text(
                   filter,
-                  style: TextStyle(
+                  style: GoogleFonts.poppins( // Pakai Poppins agar rapi
                     color: Colors.white,
-                    fontSize: 13,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
