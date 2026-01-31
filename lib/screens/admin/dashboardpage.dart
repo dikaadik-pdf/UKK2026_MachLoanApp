@@ -7,16 +7,16 @@ import 'package:ukk2026_machloanapp/screens/admin/logaktivitas.dart';
 import 'package:ukk2026_machloanapp/screens/admin/memberscreen.dart';
 import 'package:ukk2026_machloanapp/screens/admin/logoutpage.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreenAdmin extends StatefulWidget {
   final String username;
 
-  const DashboardScreen({super.key, required this.username});
+  const DashboardScreenAdmin({super.key, required this.username});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreenAdmin> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreenAdmin> {
   final List<double> weeklyData = [30, 12, 10, 20, 85, 40, 50];
   final List<String> weekDays = [
     'Sept',

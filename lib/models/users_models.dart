@@ -1,38 +1,23 @@
 class UserModel {
-  final int? idUser;
+  final String id;      // UUID dari Supabase Auth
   final String username;
-  final String? role;
-  final String? password;
+  final String role;
 
   UserModel({
-    this.idUser,
+    required this.id,
     required this.username,
-    this.role,
-    this.password,
+    required this.role,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      idUser: json['id_user'] is int
-          ? json['id_user']
-          : int.tryParse(json['id_user'].toString()),
-      username: json['username'] ?? '',
-      role: json['role'],
-      password: json['password'],
-    );
-  }
+  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
+        id: json['id_user'],
+        username: json['username'],
+        role: json['role'],
+      );
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id_user': idUser,
-      'username': username,
-      'role': role,
-      'password': password,
-    };
-  }
-
-  // ✅ TAMBAHKAN INI
-  bool isValid() {
-    return username.isNotEmpty && (password?.isNotEmpty ?? false);
-  }
+  Map<String, dynamic> toJson() => {
+        'id_user': id,
+        'username': username,
+        'role': role,
+      };
 }
