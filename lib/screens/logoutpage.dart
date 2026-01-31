@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/screens/splashscreen.dart';
+import '../services/auth_services.dart';
+import '../services/session_services.dart';
 
-class AccountScreen extends StatelessWidget {
-
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
+
+  @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen> {
+  final AuthService _authService = AuthService();
+  final SessionService _sessionService = SessionService();
+  
+  String _userName = 'Loading...';
+  String _userRole = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await _sessionService.getSession();
+    if (user != null && mounted) {
+      setState(() {
+        _userName = user.username ?? 'User';
+        _userRole = user.role ?? 'Member';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +40,7 @@ class AccountScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFD9D9D9),
       body: Column(
         children: [
-          // --- HEADER / APPBAR (Sesuai Ukuran MemberScreen) ---
+          // --- HEADER / APPBAR ---
           Container(
             width: double.infinity,
             height: 120,
@@ -79,7 +107,7 @@ class AccountScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Nadin Amizah', // Bisa diganti: userData.fullName ?? 'User'
+                              _userName,
                               style: GoogleFonts.poppins(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -87,7 +115,7 @@ class AccountScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              'Administrator', // Bisa diganti: userData.role ?? 'Status'
+                              _userRole,
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.white70,
@@ -167,7 +195,7 @@ class AccountScreen extends StatelessWidget {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD32F2F), // Merah sesuai gambar
+                        backgroundColor: const Color(0xFFD32F2F),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
                         ),
@@ -184,8 +212,6 @@ class AccountScreen extends StatelessWidget {
       ),
     );
   }
-
-  // Fungsi untuk memunculkan Dialog Konfirmasi
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -209,13 +235,34 @@ class AccountScreen extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                // Navigasi ke SplashScreen dan hapus semua history route
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SplashScreen()),
-                  (route) => false,
+              onPressed: () async {
+                Navigator.pop(context); 
+                
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
                 );
+
+  
+                await _sessionService.clear();
+                
+              
+                _authService.logout().catchError((e) {
+                  print('Logout Supabase error (diabaikan): $e');
+                });
+
+                if (mounted) {
+                  Navigator.pop(context);
+         
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SplashScreen()),
+                    (route) => false,
+                  );
+                }
               },
               child: Text(
                 'Ya, Keluar',
@@ -231,7 +278,6 @@ class AccountScreen extends StatelessWidget {
     );
   }
 
-  // Widget Helper untuk baris informasi agar kode lebih rapi
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),

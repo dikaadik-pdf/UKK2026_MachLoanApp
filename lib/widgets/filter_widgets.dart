@@ -29,15 +29,13 @@ class _CustomFilterBarState extends State<CustomFilterBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Tinggi ditambah sedikit agar teks tidak terasa sesak
       height: 55, 
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F), // Biru tua sesuai gambar
+        color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(35),
       ),
       child: SingleChildScrollView(
-        // INI KUNCINYA: Biar bisa digeser dan tidak error overflow
         scrollDirection: Axis.horizontal, 
         physics: const BouncingScrollPhysics(),
         child: Row(
@@ -59,13 +57,13 @@ class _CustomFilterBarState extends State<CustomFilterBar> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF769DCB) // Biru muda saat dipilih
+                      ? const Color(0xFF769DCB)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(25),
                 ),
                 child: Text(
                   filter,
-                  style: GoogleFonts.poppins( // Pakai Poppins agar rapi
+                  style: GoogleFonts.poppins( 
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,

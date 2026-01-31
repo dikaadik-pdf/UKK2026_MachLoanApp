@@ -12,7 +12,6 @@ class PeminjamanScreen extends StatefulWidget {
 class _PeminjamanScreenState extends State<PeminjamanScreen> {
   String activeFilter = 'Menunggu';
 
-  // Data Dummy sesuai gambar referensi
   final List<PeminjamanModel> allData = [
     PeminjamanModel(
       id: '1',
@@ -53,13 +52,12 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
         .toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFD9D9D9), // Disamakan dengan AlatScreen
+      backgroundColor: const Color(0xFFD9D9D9), 
       body: Column(
         children: [
-          // --- HEADER (BIRU MUDA) Identik dengan AlatScreen ---
           Container(
             width: double.infinity,
-            height: 120, // Height disamakan
+            height: 120,
             decoration: const BoxDecoration(
               color: Color(0xFF769DCB),
               borderRadius: BorderRadius.only(
@@ -68,7 +66,7 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 35, 20, 20), // Padding disamakan
+              padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -83,7 +81,7 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                   Text(
                     'Peminjaman',
                     style: GoogleFonts.poppins(
-                      fontSize: 32, // Ukuran font disamakan
+                      fontSize: 32,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                       height: 1,
@@ -152,7 +150,7 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(25), // Disamakan dengan style card kategori
+        borderRadius: BorderRadius.circular(25), 
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
@@ -257,7 +255,7 @@ class CustomFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 25), // Margin disamakan dengan content AlatScreen
+      margin: const EdgeInsets.symmetric(horizontal: 25),
       height: 45,
       decoration: BoxDecoration(
         color: const Color(0xFF1F4F6F),

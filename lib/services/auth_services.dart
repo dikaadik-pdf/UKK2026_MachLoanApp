@@ -22,7 +22,6 @@ class AuthService {
         };
       }
 
-      // ✅ Ambil data user dari tabel "users" (optional)
       final userData = await supabase
           .from('users')
           .select('*')
@@ -50,6 +49,16 @@ class AuthService {
         'success': false,
         'message': e.toString(),
       };
+    }
+  }
+
+  Future<bool> logout() async {
+    try {
+      await supabase.auth.signOut();
+      return true;
+    } catch (e) {
+      print('Logout error: $e');
+      return false;
     }
   }
 }

@@ -1,5 +1,5 @@
 class UserModel {
-  final String id;      // UUID dari Supabase Auth
+  final String id;     
   final String username;
   final String role;
 

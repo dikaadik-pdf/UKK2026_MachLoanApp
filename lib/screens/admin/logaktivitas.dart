@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/models/logaktivitas_models.dart';
+import 'package:ukk2026_machloanapp/services/logaktivitas_services.dart';
 import 'package:ukk2026_machloanapp/widgets/searchbar_widgets.dart';
 
 class LogAktivitasScreen extends StatefulWidget {
@@ -11,48 +12,76 @@ class LogAktivitasScreen extends StatefulWidget {
 }
 
 class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
-  // Data Dummy Master
-  final List<LogAktivitasModel> _allLogs = [
-    LogAktivitasModel(
-      id: '1',
-      namaUser: 'Wibian Junanta',
-      role: 'Petugas',
-      aksi: 'Menyetujui Peminjaman',
-      tanggal: '20/Jan/26',
-    ),
-    LogAktivitasModel(
-      id: '2',
-      namaUser: 'Ignatius Kurniawan',
-      role: 'Peminjam',
-      aksi: 'Peminjaman Alat "Alat Tangan"',
-      tanggal: '20/Jan/26',
-    ),
-    LogAktivitasModel(
-      id: '3',
-      namaUser: 'Ignatius Kurniawan',
-      role: 'Peminjam',
-      aksi: 'Pengembalian Alat "Alat Ukur"',
-      tanggal: '20/Jan/26',
-    ),
-  ];
-
-  // List untuk menampung hasil filter pencarian
-  List<LogAktivitasModel> _filteredLogs = [];
+  final LogAktivitasService _logService = LogAktivitasService();
   final TextEditingController _searchController = TextEditingController();
+  
+  List<LogAktivitasModel> _allLogs = [];
+  List<LogAktivitasModel> _filteredLogs = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
+  String? _selectedRole;
 
   @override
   void initState() {
     super.initState();
-    _filteredLogs = _allLogs; // Awalnya tampilkan semua data
+    _loadLogs();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadLogs() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final logs = await _logService.getAllLogs();
+      setState(() {
+        _allLogs = logs;
+        _filteredLogs = logs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   void _filterSearch(String query) {
     setState(() {
-      _filteredLogs = _allLogs
-          .where((log) =>
-              log.namaUser.toLowerCase().contains(query.toLowerCase()) ||
-              log.aksi.toLowerCase().contains(query.toLowerCase()))
-          .toList();
+      if (query.isEmpty) {
+        _filteredLogs = _selectedRole != null
+            ? _allLogs.where((log) => log.role == _selectedRole).toList()
+            : _allLogs;
+      } else {
+        _filteredLogs = _allLogs
+            .where((log) =>
+                log.namaUser.toLowerCase().contains(query.toLowerCase()) ||
+                log.aksi.toLowerCase().contains(query.toLowerCase()))
+            .where((log) => _selectedRole != null ? log.role == _selectedRole : true)
+            .toList();
+      }
+    });
+  }
+
+ 
+  void _filterByRole(String? role) {
+    setState(() {
+      _selectedRole = role;
+      _searchController.clear();
+      
+      if (role == null) {
+        _filteredLogs = _allLogs;
+      } else {
+        _filteredLogs = _allLogs.where((log) => log.role == role).toList();
+      }
     });
   }
 
@@ -82,14 +111,20 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Log Aktivitas',
-                    style: GoogleFonts.poppins(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      height: 1,
+                  Expanded(
+                    child: Text(
+                      'Log Aktivitas',
+                      style: GoogleFonts.poppins(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        height: 1,
+                      ),
                     ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white, size: 24),
+                    onPressed: _loadLogs,
                   ),
                 ],
               ),
@@ -108,7 +143,43 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
             ),
           ),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 15),
+
+          // --- FILTER ROLE ---
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            child: Row(
+              children: [
+                Text(
+                  'Filter: ',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF1F4F6F),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip('Semua', null),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Admin', 'admin'),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Petugas', 'petugas'),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Peminjam', 'peminjam'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 15),
 
           // --- MAIN CONTAINER ---
           Expanded(
@@ -121,33 +192,38 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
               ),
               child: Column(
                 children: [
-                  Text(
-                    'Log Aktivitas',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Log Aktivitas',
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF769DCB),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Text(
+                          '${_filteredLogs.length} aktivitas',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   
                   // --- LIST VIEW ---
                   Expanded(
-                    child: _filteredLogs.isEmpty
-                        ? Center(
-                            child: Text(
-                              "Tidak ada aktivitas ditemukan",
-                              style: GoogleFonts.poppins(color: Colors.white70),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: EdgeInsets.zero,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: _filteredLogs.length,
-                            itemBuilder: (context, index) {
-                              return _buildActivityCard(_filteredLogs[index]);
-                            },
-                          ),
+                    child: _buildLogList(),
                   ),
                 ],
               ),
@@ -155,6 +231,107 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String? role) {
+    final isSelected = _selectedRole == role;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) => _filterByRole(selected ? role : null),
+      backgroundColor: Colors.white,
+      selectedColor: const Color(0xFF769DCB),
+      labelStyle: GoogleFonts.poppins(
+        fontSize: 12,
+        color: isSelected ? Colors.white : const Color(0xFF1F4F6F),
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected ? const Color(0xFF769DCB) : Colors.grey.shade300,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogList() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Colors.white,
+        ),
+      );
+    }
+
+    if (_errorMessage.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white70, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Terjadi Kesalahan',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadLogs,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF769DCB),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_filteredLogs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.inbox_outlined, color: Colors.white70, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? "Tidak ada aktivitas ditemukan"
+                  : "Belum ada aktivitas",
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      physics: const BouncingScrollPhysics(),
+      itemCount: _filteredLogs.length,
+      itemBuilder: (context, index) {
+        return _buildActivityCard(_filteredLogs[index]);
+      },
     );
   }
 
@@ -176,9 +353,12 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CircleAvatar(
-            backgroundColor: Color(0xFF1F4F6F),
-            child: Icon(Icons.person, color: Colors.white),
+          CircleAvatar(
+            backgroundColor: const Color(0xFF1F4F6F),
+            child: Icon(
+              _getRoleIcon(log.role),
+              color: Colors.white,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -193,16 +373,26 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                     color: Colors.white,
                   ),
                 ),
-                Text(
-                  log.role,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white70,
+                Container(
+                  margin: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getRoleColor(log.role),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    log.roleFormatted,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
                       child: Text(
@@ -213,12 +403,27 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                         ),
                       ),
                     ),
-                    Text(
-                      log.tanggal,
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: Colors.white70,
-                      ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          log.tanggal,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        Text(
+                          log.waktuAktivitas.hour.toString().padLeft(2, '0') + 
+                          ':' + 
+                          log.waktuAktivitas.minute.toString().padLeft(2, '0'),
+                          style: GoogleFonts.poppins(
+                            fontSize: 9,
+                            color: Colors.white60,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -228,5 +433,31 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
         ],
       ),
     );
+  }
+
+  IconData _getRoleIcon(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return Icons.admin_panel_settings;
+      case 'petugas':
+        return Icons.support_agent;
+      case 'peminjam':
+        return Icons.person;
+      default:
+        return Icons.person_outline;
+    }
+  }
+
+  Color _getRoleColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return Colors.red.shade700;
+      case 'petugas':
+        return Colors.blue.shade700;
+      case 'peminjam':
+        return Colors.green.shade700;
+      default:
+        return Colors.grey.shade700;
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/models/member_models.dart';
+import 'package:ukk2026_machloanapp/services/member_services.dart';
 
 class EditMemberDialog extends StatefulWidget {
   final MemberModel member;
@@ -12,13 +13,57 @@ class EditMemberDialog extends StatefulWidget {
 
 class _EditMemberDialogState extends State<EditMemberDialog> {
   late TextEditingController _nameController;
-  late TextEditingController _statusController;
+  late String _selectedRole;
+  
+  final MemberService _memberService = MemberService();
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.member.nama);
-    _statusController = TextEditingController(text: widget.member.status);
+    _selectedRole = widget.member.status; // 'Admin', 'Petugas', atau 'Peminjam'
+  }
+
+  Future<void> _handleUpdate() async {
+    if (_nameController.text.trim().isEmpty) {
+      _showSnackbar('Nama tidak boleh kosong', isError: true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await _memberService.updateMember(
+      userId: widget.member.id,
+      username: _nameController.text.trim(),
+      role: _memberService.roleToDatabase(_selectedRole),
+    );
+
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      if (result['success']) {
+        Navigator.pop(context, result);
+      } else {
+        _showSnackbar(result['message'], isError: true);
+      }
+    }
+  }
+
+  void _showSnackbar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   @override
@@ -27,51 +72,41 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
       backgroundColor: Colors.transparent,
       child: Container(
         width: 345,
-
-        // Padding sama dengan AddMemberDialog
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 32),
-
         decoration: BoxDecoration(
           color: const Color(0xFF769DCB),
           borderRadius: BorderRadius.circular(25),
         ),
-
-        child: SizedBox(
-          height: 480, // 🔥 MATCH FIGMA HEIGHT
+        child: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.max,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // ===== HEADER + FORM =====
-              Column(
-                children: [
-                  Text(
-                    "Edit Anggota",
-                    style: GoogleFonts.poppins(
-                      fontSize: 27,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  _buildField("Nama", _nameController),
-                  const SizedBox(height: 14),
-                  _buildField("Status", _statusController),
-                ],
+              Text(
+                "Edit Anggota",
+                style: GoogleFonts.poppins(
+                  fontSize: 27,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
+              const SizedBox(height: 30),
 
-              // ===== PUSH BUTTON KE BAWAH =====
-              const Spacer(),
+              // Input Nama
+              _buildField("Nama", _nameController),
+              const SizedBox(height: 14),
 
-              // ===== BUTTONS =====
+              // Dropdown Role
+              _buildRoleDropdown(),
+              const SizedBox(height: 30),
+
+              // Buttons
               Row(
                 children: [
                   Expanded(
                     child: _actionButton(
                       "Kembali",
                       const Color(0xFF6B7280),
-                      () => Navigator.pop(context),
+                      _isLoading ? null : () => Navigator.pop(context),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -79,11 +114,8 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
                     child: _actionButton(
                       "Simpan",
                       const Color(0xFF2F3A40),
-                      () {
-                        widget.member.nama = _nameController.text;
-                        widget.member.status = _statusController.text;
-                        Navigator.pop(context, widget.member);
-                      },
+                      _isLoading ? null : _handleUpdate,
+                      isLoading: _isLoading,
                     ),
                   ),
                 ],
@@ -95,7 +127,6 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
     );
   }
 
-  // ===== INPUT FIELD (MATCH ADD UI) =====
   Widget _buildField(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,9 +139,7 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
             fontWeight: FontWeight.w500,
           ),
         ),
-
         const SizedBox(height: 8),
-
         Container(
           height: 46,
           decoration: BoxDecoration(
@@ -130,25 +159,83 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
     );
   }
 
-  // ===== BUTTON (MATCH ADD UI) =====
-  Widget _actionButton(String text, Color color, VoidCallback onTap) {
+  Widget _buildRoleDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Role",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F4F6F),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedRole,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1F4F6F),
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              items: ['Admin', 'Petugas', 'Peminjam'].map((role) {
+                return DropdownMenuItem(
+                  value: role,
+                  child: Text(role),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedRole = value);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionButton(
+    String text,
+    Color color,
+    VoidCallback? onTap, {
+    bool isLoading = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 42,
         decoration: BoxDecoration(
-          color: color,
+          color: onTap == null ? color.withOpacity(0.5) : color,
           borderRadius: BorderRadius.circular(14),
         ),
         alignment: Alignment.center,
-        child: Text(
-          text,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                text,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
       ),
     );
   }

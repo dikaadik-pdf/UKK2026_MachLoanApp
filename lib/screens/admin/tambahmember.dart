@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ukk2026_machloanapp/models/member_models.dart';
+import 'package:ukk2026_machloanapp/services/member_services.dart';
 
 class AddMemberDialog extends StatefulWidget {
   const AddMemberDialog({Key? key}) : super(key: key);
@@ -11,7 +11,71 @@ class AddMemberDialog extends StatefulWidget {
 
 class _AddMemberDialogState extends State<AddMemberDialog> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _statusController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  
+  final MemberService _memberService = MemberService();
+  
+  String _selectedRole = 'Admin';
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  Future<void> _handleSubmit() async {
+    // Validasi input
+    if (_nameController.text.trim().isEmpty) {
+      _showSnackbar('Nama tidak boleh kosong', isError: true);
+      return;
+    }
+    if (_emailController.text.trim().isEmpty) {
+      _showSnackbar('Email tidak boleh kosong', isError: true);
+      return;
+    }
+    if (_passwordController.text.trim().isEmpty) {
+      _showSnackbar('Password tidak boleh kosong', isError: true);
+      return;
+    }
+    if (_passwordController.text.length < 6) {
+      _showSnackbar('Password minimal 6 karakter', isError: true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await _memberService.createMember(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      username: _nameController.text.trim(),
+      role: _memberService.roleToDatabase(_selectedRole),
+    );
+
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      if (result['success']) {
+        Navigator.pop(context, result); // Kirim result ke parent
+      } else {
+        _showSnackbar(result['message'], isError: true);
+      }
+    }
+  }
+
+  void _showSnackbar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,51 +83,61 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
       backgroundColor: Colors.transparent,
       child: Container(
         width: 345,
-
-        // Padding tetap sesuai request
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 32),
-
         decoration: BoxDecoration(
           color: const Color(0xFF769DCB),
           borderRadius: BorderRadius.circular(25),
         ),
-
-        child: SizedBox(
-          height: 480, // 🔥 MATCH FIGMA HEIGHT
+        child: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.max,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // ===== BAGIAN ATAS (TITLE + FORM) =====
-              Column(
-                children: [
-                  Text(
-                    "Tambah Anggota",
-                    style: GoogleFonts.poppins(
-                      fontSize: 27,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  _buildField("Nama", _nameController),
-                  const SizedBox(height: 14),
-                  _buildField("Status", _statusController),
-                ],
+              Text(
+                "Tambah Anggota",
+                style: GoogleFonts.poppins(
+                  fontSize: 27,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
+              const SizedBox(height: 30),
 
-              // ===== PUSH BUTTON KE BAWAH =====
-              const Spacer(),
+              // Input Nama
+              _buildField("Nama", _nameController),
+              const SizedBox(height: 14),
 
-              // ===== BUTTONS =====
+              // Input Email
+              _buildField("Email", _emailController, keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 14),
+
+              // Input Password
+              _buildField(
+                "Password",
+                _passwordController,
+                obscureText: _obscurePassword,
+                suffix: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Dropdown Role
+              _buildRoleDropdown(),
+              const SizedBox(height: 30),
+
+              // Buttons
               Row(
                 children: [
                   Expanded(
                     child: _actionButton(
                       "Kembali",
                       const Color(0xFF6B7280),
-                      () => Navigator.pop(context),
+                      _isLoading ? null : () => Navigator.pop(context),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -71,18 +145,8 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                     child: _actionButton(
                       "Tambah",
                       const Color(0xFF2F3A40),
-                      () {
-                        if (_nameController.text.isNotEmpty) {
-                          Navigator.pop(
-                            context,
-                            MemberModel(
-                              id: DateTime.now().toString(),
-                              nama: _nameController.text,
-                              status: _statusController.text,
-                            ),
-                          );
-                        }
-                      },
+                      _isLoading ? null : _handleSubmit,
+                      isLoading: _isLoading,
                     ),
                   ),
                 ],
@@ -94,8 +158,13 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
     );
   }
 
-  // ===== INPUT FIELD =====
-  Widget _buildField(String label, TextEditingController controller) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool obscureText = false,
+    Widget? suffix,
+    TextInputType? keyboardType,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -107,9 +176,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
             fontWeight: FontWeight.w500,
           ),
         ),
-
         const SizedBox(height: 8),
-
         Container(
           height: 46,
           decoration: BoxDecoration(
@@ -118,10 +185,13 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
           ),
           child: TextField(
             controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
             style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              suffixIcon: suffix,
             ),
           ),
         ),
@@ -129,25 +199,83 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
     );
   }
 
-  // ===== BUTTON =====
-  Widget _actionButton(String text, Color color, VoidCallback onTap) {
+  Widget _buildRoleDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Role",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F4F6F),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedRole,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1F4F6F),
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              items: ['Admin', 'Petugas', 'Peminjam'].map((role) {
+                return DropdownMenuItem(
+                  value: role,
+                  child: Text(role),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedRole = value);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionButton(
+    String text,
+    Color color,
+    VoidCallback? onTap, {
+    bool isLoading = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 42,
         decoration: BoxDecoration(
-          color: color,
+          color: onTap == null ? color.withOpacity(0.5) : color,
           borderRadius: BorderRadius.circular(14),
         ),
         alignment: Alignment.center,
-        child: Text(
-          text,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                text,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
       ),
     );
   }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:ukk2026_machloanapp/screens/admin/list_alat.dart';
+import 'package:ukk2026_machloanapp/screens/admin/alat_screen.dart';
 import 'package:ukk2026_machloanapp/screens/admin/peminjaman.dart';
 import 'package:ukk2026_machloanapp/screens/admin/logaktivitas.dart';
 import 'package:ukk2026_machloanapp/screens/admin/memberscreen.dart';
-import 'package:ukk2026_machloanapp/screens/admin/logoutpage.dart';
+import 'package:ukk2026_machloanapp/screens/logoutpage.dart';
 
 class DashboardScreenAdmin extends StatefulWidget {
   final String username;
@@ -95,7 +95,6 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    // STAT CARDS
                     Row(
                       children: [
                         _buildStatCard('Total\nAlat', '20'),
@@ -262,7 +261,6 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Column(
                   children: [
-                    // Avatar
                     Container(
                       width: 80,
                       height: 80,

@@ -17,38 +17,36 @@ class SuccessDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        height: 230,
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: const Color(0xFF1F4F6F),
           borderRadius: BorderRadius.circular(25),
         ),
-        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               title,
               style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+                fontSize: 30,
+                fontWeight: FontWeight.w900,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 18,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            // Button Oke
+            const SizedBox(height: 20),
             SizedBox(
-              width: 120,
-              height: 45,
+              width: 100,
+              height: 40,
               child: ElevatedButton(
                 onPressed: onOk,
                 style: ElevatedButton.styleFrom(
@@ -61,7 +59,8 @@ class SuccessDialog extends StatelessWidget {
                 child: const Text(
                   'Oke!',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     color: Color(0xFFDDDDDD),
                   ),
                 ),

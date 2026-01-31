@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:ukk2026_machloanapp/screens/admin/logoutpage.dart';
-import 'package:ukk2026_machloanapp/screens/petugas/listalatpetugas.dart';
+import 'package:ukk2026_machloanapp/screens/logoutpage.dart';
+import 'package:ukk2026_machloanapp/screens/petugas/alatscreen_petugas.dart';
 import 'package:ukk2026_machloanapp/screens/petugas/laporanpetugas.dart';
 import 'package:ukk2026_machloanapp/screens/petugas/peminjamanpetugas.dart';
 
@@ -55,18 +55,18 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Dashboard Petugas',
+                        'Dashboard',
                         style: GoogleFonts.poppins(
-                          fontSize: 26,
+                          fontSize: 28,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Halo, ${widget.username}',
+                        'Selamat Datang, ${widget.username}',
                         style: GoogleFonts.poppins(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: Colors.white70,
                         ),
@@ -96,29 +96,17 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
                     // STAT CARDS
                     Row(
                       children: [
-                        _buildStatCard('Total\nAlat', '20', Icons.build_circle),
+                        _buildStatCard('Total\nAlat', '20'),
                         const SizedBox(width: 12),
-                        _buildStatCard('Tersedia', '15', Icons.check_circle),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        _buildStatCard('Dipinjam', '5', Icons.assignment),
+                        _buildStatCard('Alat\nTersedia', '15'),
                         const SizedBox(width: 12),
-                        _buildStatCard('Peminjam', '8', Icons.people),
+                        _buildStatCard('Dipinjam', '5'),
                       ],
                     ),
 
                     const SizedBox(height: 25),
 
                     _buildChartSection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildQuickActions(),
                   ],
                 ),
               ),
@@ -130,14 +118,14 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
   }
 
   // ===== STAT CARD =====
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  Widget _buildStatCard(String label, String value) {
     return Expanded(
       child: Container(
-        height: 130,
-        padding: const EdgeInsets.all(16),
+        height: 175,
+        padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
           color: const Color(0xFF1F4F6F),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
@@ -149,25 +137,24 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white70, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 4),
             Text(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: 13,
                 color: Colors.white70,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 44,
+                fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
+                color: Colors.white,
               ),
             ),
           ],
@@ -180,13 +167,14 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
   Widget _buildChartSection() {
     return Container(
       width: double.infinity,
+      height: 290,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withOpacity(0.18),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -195,23 +183,25 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.bar_chart, color: Colors.white70, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Grafik Peminjaman Minggu Ini',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2F3A40),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Grafik Peminjaman',
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
+
+          const SizedBox(height: 18),
+
+          Expanded(
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
@@ -229,112 +219,7 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
     );
   }
 
-  // ===== QUICK ACTIONS =====
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            'Menu Cepat',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1F4F6F),
-            ),
-          ),
-        ),
-        Row(
-          children: [
-            _buildQuickActionCard(
-              'Daftar Alat',
-              Icons.build,
-              const Color(0xFF769DCB),
-              () {
-                // Navigator.push ke halaman alat
-              },
-            ),
-            const SizedBox(width: 12),
-            _buildQuickActionCard(
-              'Peminjaman',
-              Icons.assignment,
-              const Color(0xFF5C8AB8),
-              () {
-                // Navigator.push ke halaman peminjaman
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _buildQuickActionCard(
-              'Laporan',
-              Icons.description,
-              const Color(0xFF4A7BA7),
-              () {
-                // Navigator.push ke halaman laporan petugas
-              },
-            ),
-            const SizedBox(width: 12),
-            _buildQuickActionCard(
-              'Pengaturan',
-              Icons.settings,
-              const Color(0xFF3B6B94),
-              () {
-                // Navigator.push ke halaman settings
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActionCard(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 100,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 32),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ===== SIDEBAR =====
+  // ===== SIDEBAR (UPDATED) =====
   Widget _buildSidebar(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.transparent,
@@ -342,15 +227,15 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
       child: Align(
         alignment: Alignment.topRight,
         child: Container(
-          width: 260,
-          margin: const EdgeInsets.only(top: 50, right: 20),
+          width: 280,
+          margin: const EdgeInsets.only(top: 40, right: 20, bottom: 40),
           decoration: BoxDecoration(
             color: const Color(0xFF769DCB),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(25),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 10,
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
             ],
@@ -358,54 +243,83 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Close button
+              // ===== CLOSE BUTTON =====
               Align(
                 alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
               ),
 
-              // User info
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              // ===== USER PROFILE SECTION =====
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.white24,
-                      child: Icon(Icons.person, size: 40, color: Colors.white),
+                    // Avatar
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 45,
+                        color: Colors.white,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Username/Email
                     Text(
                       widget.username,
                       style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    Text(
-                      'Petugas',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white70,
-                        fontSize: 12,
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Role Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Petugas',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const Divider(color: Colors.white24, height: 24),
+              const SizedBox(height: 10),
+              const Divider(color: Colors.white30, thickness: 1, height: 1),
+              const SizedBox(height: 10),
 
+              // ===== MENU ITEMS (PETUGAS) =====
               _buildSidebarItem(Icons.dashboard, 'Dashboard', () {
                 Navigator.pop(context);
               }),
 
-              const Divider(color: Colors.white24),
-
-               _buildSidebarItem(Icons.build, 'Daftar Alat', () {
+              _buildSidebarItem(Icons.build, 'Daftar Alat', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
@@ -414,31 +328,26 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
                   ),
                 );
               }),
-              const Divider(color: Colors.white24),
 
-               _buildSidebarItem(Icons.volunteer_activism, 'Peminjaman', () {
+              _buildSidebarItem(Icons.volunteer_activism, 'Peminjaman', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => PeminjamanPetugasScreen (username: widget.username),
+                    builder: (_) => PeminjamanPetugasScreen(username: widget.username),
                   ),
                 );
               }),
 
-              const Divider(color: Colors.white24),
-
-             _buildSidebarItem(Icons.assignment, 'Laporan Petugas', () {
+              _buildSidebarItem(Icons.assignment, 'Laporan Petugas', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => LaporanPage (username: widget.username),
+                    builder: (_) => LaporanPage(username: widget.username),
                   ),
                 );
               }),
-
-              const Divider(color: Colors.white24),
 
               _buildSidebarItem(Icons.settings, 'Pengaturan', () {
                 Navigator.pop(context);
@@ -448,7 +357,7 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
                 );
               }),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
             ],
           ),
         ),
@@ -457,18 +366,25 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
   }
 
   Widget _buildSidebarItem(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.white),
-      title: Text(
-        title,
-        style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 22),
+            const SizedBox(width: 15),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       ),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
     );
   }
 
@@ -481,7 +397,7 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
             BarChartRodData(
               toY: weeklyData[i],
               color: const Color(0xFF769DCB),
-              width: 14,
+              width: 16,
               borderRadius: BorderRadius.circular(4),
             ),
           ],
@@ -492,23 +408,16 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            getTitlesWidget: (v, _) => Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                weekDays[v.toInt()],
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+            getTitlesWidget: (v, _) => Text(
+              weekDays[v.toInt()],
+              style: const TextStyle(color: Colors.white70, fontSize: 10),
             ),
           ),
         ),
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 28,
+            reservedSize: 30,
             getTitlesWidget: (v, _) => Text(
               '${v.toInt()}',
               style: const TextStyle(color: Colors.white70, fontSize: 10),
@@ -522,10 +431,7 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
   FlGridData _buildChartGrid() => FlGridData(
         show: true,
         drawVerticalLine: false,
-        getDrawingHorizontalLine: (v) => FlLine(
-          color: Colors.white10,
-          strokeWidth: 1,
-          dashArray: [5, 5],
-        ),
+        getDrawingHorizontalLine: (v) =>
+            FlLine(color: Colors.white10, strokeWidth: 1, dashArray: [5, 5]),
       );
 }

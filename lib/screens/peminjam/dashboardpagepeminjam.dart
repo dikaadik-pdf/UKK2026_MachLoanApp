@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:ukk2026_machloanapp/screens/admin/logoutpage.dart';
-import 'package:ukk2026_machloanapp/screens/peminjam/peminjaman_peminjam.dart';
+import 'package:ukk2026_machloanapp/screens/logoutpage.dart';
+import 'package:ukk2026_machloanapp/screens/peminjam/alatscreen_peminjam.dart';
+import 'package:ukk2026_machloanapp/screens/peminjam/detailpeminjaman_peminjam.dart';
+
 
 class DashboardScreenPeminjam extends StatefulWidget {
   final String username;
@@ -16,15 +18,7 @@ class DashboardScreenPeminjam extends StatefulWidget {
 
 class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
   final List<double> weeklyData = [30, 12, 10, 20, 85, 40, 50];
-  final List<String> weekDays = [
-    'Sen',
-    'Sel',
-    'Rab',
-    'Kam',
-    'Jum',
-    'Sab',
-    'Min',
-  ];
+  final List<String> weekDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
   @override
   Widget build(BuildContext context) {
@@ -74,11 +68,8 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                   ),
                   Builder(
                     builder: (context) => IconButton(
-                      icon: const Icon(
-                        Icons.menu,
-                        color: Colors.white,
-                        size: 34,
-                      ),
+                      icon: const Icon(Icons.menu,
+                          color: Colors.white, size: 34),
                       onPressed: () =>
                           Scaffold.of(context).openEndDrawer(),
                     ),
@@ -169,13 +160,6 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
       decoration: BoxDecoration(
         color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.18),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,11 +186,10 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: 100,
-                barTouchData: BarTouchData(enabled: true),
-                titlesData: _buildChartTitles(),
-                gridData: _buildChartGrid(),
-                borderData: FlBorderData(show: false),
                 barGroups: _buildBarGroups(),
+                titlesData: _buildChartTitles(),
+                borderData: FlBorderData(show: false),
+                gridData: _buildChartGrid(),
               ),
             ),
           ),
@@ -219,7 +202,6 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
   Widget _buildSidebar(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.transparent,
-      elevation: 0,
       child: Align(
         alignment: Alignment.topRight,
         child: Container(
@@ -229,13 +211,6 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
           decoration: BoxDecoration(
             color: const Color(0xFF769DCB),
             borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -243,20 +218,16 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
               Align(
                 alignment: Alignment.topRight,
                 child: IconButton(
-                  icon: const Icon(Icons.close,
-                      color: Colors.white),
+                  icon:
+                      const Icon(Icons.close, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
               const SizedBox(height: 10),
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.person,
+              const CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white30,
+                child: Icon(Icons.person,
                     size: 45, color: Colors.white),
               ),
               const SizedBox(height: 12),
@@ -266,34 +237,38 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                     color: Colors.white,
                     fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Peminjam',
-                  style: GoogleFonts.poppins(
-                      color: Colors.white, fontSize: 12),
-                ),
-              ),
+              const SizedBox(height: 10),
               const Divider(color: Colors.white30),
+
               _buildSidebarItem(Icons.dashboard, 'Dashboard',
                   () => Navigator.pop(context)),
 
+              /// 🔧 FIX DI SINI
               _buildSidebarItem(Icons.build, 'Alat', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const PeminjamAlatScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => PeminjamAlatScreen(
+                      username: widget.username,
+                      idKategori: 1,
+                      namaKategori: 'Alat',
+                      kategoriIcon: Icons.build,
+                    ),
+                  ),
                 );
               }),
-                  
-              _buildSidebarItem(Icons.volunteer_activism, 'Peminjaman', () {
+
+              _buildSidebarItem(Icons.assignment, 'Peminjaman', () {
                 Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PeminjamanPeminjamScreen(
+                      username: widget.username,
+                    ),
+                  ),
+                );
               }),
 
               _buildSidebarItem(Icons.settings, 'Pengaturan', () {
@@ -304,7 +279,6 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                       builder: (_) => const AccountScreen()),
                 );
               }),
-              const SizedBox(height: 15),
             ],
           ),
         ),
@@ -341,7 +315,6 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
               toY: weeklyData[i],
               color: const Color(0xFF769DCB),
               width: 16,
-              borderRadius: BorderRadius.circular(4),
             ),
           ],
         );
@@ -351,27 +324,19 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            getTitlesWidget: (v, _) {
-              final i = v.toInt();
-              if (i < 0 || i >= weekDays.length) {
-                return const SizedBox();
-              }
-              return Text(
-                weekDays[i],
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 10),
-              );
-            },
+            getTitlesWidget: (v, _) =>
+                Text(weekDays[v.toInt()],
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 10)),
           ),
         ),
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            getTitlesWidget: (v, _) => Text(
-              v.toInt().toString(),
-              style: const TextStyle(
-                  color: Colors.white70, fontSize: 10),
-            ),
+            getTitlesWidget: (v, _) =>
+                Text(v.toInt().toString(),
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 10)),
           ),
         ),
         topTitles:
@@ -380,13 +345,5 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
             const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       );
 
-  FlGridData _buildChartGrid() => FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        getDrawingHorizontalLine: (v) => FlLine(
-          color: Colors.white10,
-          strokeWidth: 1,
-          dashArray: [5, 5],
-        ),
-      );
+  FlGridData _buildChartGrid() => FlGridData(show: true);
 }

@@ -18,20 +18,20 @@ class PeminjamanModel {
   });
 }
 
-class PeminjamanPetugasScreen extends StatefulWidget {
+class PeminjamanPeminjamScreen extends StatefulWidget {
   final String username;
 
-  const PeminjamanPetugasScreen({
+  const PeminjamanPeminjamScreen({
     Key? key,
     required this.username,
   }) : super(key: key);
 
   @override
-  State<PeminjamanPetugasScreen> createState() =>
-      _PeminjamanPetugasScreenState();
+  State<PeminjamanPeminjamScreen> createState() =>
+      _PeminjamanPeminjamScreenState();
 }
 
-class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
+class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
   String activeFilter = 'Menunggu';
 
   final List<PeminjamanModel> allData = [
@@ -78,43 +78,15 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
       body: Column(
         children: [
           // --- HEADER ---
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
-            decoration: const BoxDecoration(
-              color: Color(0xFF769DCB),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 24),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  'Peminjaman',
-                  style: GoogleFonts.poppins(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildHeader(),
 
           const SizedBox(height: 15),
 
-          // --- FILTER BAR (SCROLLABLE) ---
+          // --- FILTER BAR ---
           _buildScrollableFilter(),
 
           const SizedBox(height: 10),
 
-          // --- INFO DENDA (Hanya di tab Pengembalian) ---
           if (activeFilter == 'Pengembalian') _buildInfoDenda(),
 
           // --- LIST CONTENT ---
@@ -130,7 +102,34 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
     );
   }
 
-  // Widget Filter yang bisa digeser
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
+      decoration: const BoxDecoration(
+        color: Color(0xFF769DCB),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Peminjaman',
+            style: GoogleFonts.poppins(
+              fontSize: 32,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const Icon(Icons.person, color: Colors.white, size: 35),
+        ],
+      ),
+    );
+  }
+
   Widget _buildScrollableFilter() {
     List<String> filters = ['Menunggu', 'Pengembalian', 'Ditolak', 'Selesai'];
     return Container(
@@ -140,43 +139,38 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
         color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(25),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Row(
-          children: filters.map((filter) {
-            bool isSelected = activeFilter == filter;
-            return GestureDetector(
-              onTap: () => setState(() => activeFilter = filter),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  filter,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: filters.map((filter) {
+          bool isSelected = activeFilter == filter;
+          return GestureDetector(
+            onTap: () => setState(() => activeFilter = filter),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                filter,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  // Widget Kartu Peminjaman
   Widget _buildLoanCard(PeminjamanModel data) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F), // Background biru tua utama
+        color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
@@ -188,7 +182,6 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
       ),
       child: Column(
         children: [
-          // Detail Informasi (Bagian Biru Tua)
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -197,7 +190,7 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
                 Text(
                   data.namaAlat,
                   style: GoogleFonts.poppins(
-                    fontSize: 22,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -213,23 +206,35 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
             ),
           ),
 
-          // Tombol Aksi (Hanya muncul di Tab Menunggu)
-          if (activeFilter == 'Menunggu')
+          // --- MODIFIKASI: INNER CONTAINER & BUTTON KEMBALIKAN ---
+          if (activeFilter == 'Pengembalian')
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
               decoration: const BoxDecoration(
-                color: Color(0xFF769DCB), // Area biru muda bawah
+                color: Color(0xFF769DCB),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(25),
                   bottomRight: Radius.circular(25),
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(child: _actionButton('Setujui', const Color(0xFF8DC33E))),
-                  const SizedBox(width: 15),
-                  Expanded(child: _actionButton('Tolak', const Color(0xFFE52510))),
-                ],
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8DC33E),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Kembalikan',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               ),
             ),
         ],
@@ -237,43 +242,24 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
     );
   }
 
-  // Tombol Setujui/Tolak yang sudah dirapikan ukurannya
-  Widget _actionButton(String label, Color color) {
-    return Container(
-      height: 35, // Tinggi tombol lebih ramping
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
-
-  // Badge Status
   Widget _buildStatusBadge(PeminjamanModel data) {
     if (data.status == 'Pengembalian') {
-      return Row(
-        children: [
-          _badge('Disetujui', const Color(0xFF8DC33E)),
-          const SizedBox(width: 8),
-          _badge('Denda: ${data.denda}', const Color(0xFFE52510)),
-        ],
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE52510),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'Denda: ${data.denda}',
+          style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+        ),
       );
     }
+    
     String text = data.status == 'Selesai' ? 'Dikembalikan' : data.status;
     Color color = data.status == 'Ditolak' ? const Color(0xFFE52510) : const Color(0xFF769DCB);
-    return _badge(text, color);
-  }
-
-  Widget _badge(String label, Color color) {
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
@@ -281,7 +267,7 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        label,
+        text,
         style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
       ),
     );
@@ -289,14 +275,14 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
 
   Widget _buildTextRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
           SizedBox(
-            width: 140,
+            width: 130,
             child: Text(
               label,
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500),
             ),
           ),
           Text(
@@ -318,12 +304,21 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 26),
+          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Informasi Pengembalian\nSetiap keterlambatan pengembalian maka dikenakan denda sebesar 5000/Hari',
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Informasi Pengembalian',
+                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Setiap keterlambatan pengembalian maka dikenakan denda sebesar 5000/Hari',
+                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 9),
+                ),
+              ],
             ),
           ),
         ],

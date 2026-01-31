@@ -22,10 +22,9 @@ class _LaporanPageState extends State<LaporanPage> {
       backgroundColor: const Color(0xFFD9D9D9),
       body: Column(
         children: [
-          // --- APPBAR STYLE (Identik dengan AlatScreenPetugas) ---
           Container(
             width: double.infinity,
-            height: 125, // Tinggi disesuaikan agar pas
+            height: 125,
             decoration: const BoxDecoration(
               color: Color(0xFF769DCB),
               borderRadius: BorderRadius.only(
@@ -60,7 +59,6 @@ class _LaporanPageState extends State<LaporanPage> {
               padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
               child: Column(
                 children: [
-                  // --- FILTER BAR (Rapi & Scrollable) ---
                   Container(
                     width: double.infinity,
                     height: 60,
@@ -85,10 +83,9 @@ class _LaporanPageState extends State<LaporanPage> {
 
                   const SizedBox(height: 25),
 
-                  // --- BUTTON PRINT (LEBIH TINGGI & PANJANG) ---
                   Container(
                     width: double.infinity, 
-                    height: 70, // Menambah tinggi sesuai request
+                    height: 70,
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
@@ -104,7 +101,7 @@ class _LaporanPageState extends State<LaporanPage> {
                       label: Text(
                         "Print",
                         style: GoogleFonts.poppins(
-                          fontSize: 24, // Font lebih besar
+                          fontSize: 24,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
@@ -185,7 +182,6 @@ class _LaporanPageState extends State<LaporanPage> {
     );
   }
 
-  // Widget Button Filter yang diperbaiki agar rapi
   Widget _buildFilterButton(String title) {
     bool isSelected = selectedFilter == title;
     return GestureDetector(

@@ -4,6 +4,7 @@ import 'package:ukk2026_machloanapp/models/member_models.dart';
 import 'package:ukk2026_machloanapp/screens/admin/tambahmember.dart';
 import 'package:ukk2026_machloanapp/screens/admin/editmember.dart';
 import 'package:ukk2026_machloanapp/widgets/filter_widgets.dart';
+import 'package:ukk2026_machloanapp/services/member_services.dart';
 
 class MemberScreen extends StatefulWidget {
   const MemberScreen({super.key});
@@ -13,127 +14,331 @@ class MemberScreen extends StatefulWidget {
 }
 
 class _MemberScreenState extends State<MemberScreen> {
-  final List<MemberModel> _members = [
-    MemberModel(id: '1', nama: 'Nadin Amizah', status: 'Admin'),
-    MemberModel(id: '2', nama: 'Wibian Junanta', status: 'Petugas'),
-    MemberModel(id: '3', nama: 'Ignatius Kurniawan', status: 'Peminjam'),
-  ];
+  final MemberService _memberService = MemberService();
+  List<MemberModel> _allMembers = [];
+  bool _isLoading = true;
+  String _currentFilter = 'Admin';
+  String? _errorMessage;
 
-  String currentFilter = 'Admin';
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final members = await _memberService.getAllMembers();
+      
+      if (mounted) {
+        setState(() {
+          _allMembers = members;
+          _isLoading = false;
+        });
+        
+        print('✅ UI Updated: ${members.length} members loaded');
+      }
+    } catch (e) {
+      print('❌ Error loading members: $e');
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
+  List<MemberModel> get _filteredMembers {
+    return _allMembers.where((m) => m.status == _currentFilter).toList();
+  }
+
+  Future<void> _handleDelete(MemberModel member) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1F4F6F),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'Konfirmasi Hapus',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Yakin ingin menghapus ${member.nama}?\nAkun login mereka juga akan terhapus.',
+          style: GoogleFonts.poppins(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Batal',
+              style: GoogleFonts.poppins(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Hapus',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+
+    final result = await _memberService.deleteMember(member.id);
+    
+    if (mounted) {
+      Navigator.pop(context); // Close loading
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: result['success'] ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      if (result['success']) {
+        await _loadMembers();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    List<MemberModel> filteredList = 
-        _members.where((m) => m.status == currentFilter).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
       body: Stack(
         children: [
           Column(
             children: [
-              // HEADER / APPBAR
-              Container(
-                width: double.infinity,
-                height: 120,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF769DCB),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Text(
-                        'Tambah Anggota',
-                        style: GoogleFonts.poppins(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+              _buildHeader(),
+              Expanded(child: _buildContent()),
+            ],
+          ),
+          _buildFloatingButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      height: 120,
+      decoration: const BoxDecoration(
+        color: Color(0xFF769DCB),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            Text(
+              'Kelola Anggota',
+              style: GoogleFonts.poppins(
+                fontSize: 26,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF1F4F6F),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 60,
+                color: Colors.red,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Gagal memuat data',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
                 ),
               ),
-
-              // CONTENT
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 25),
-                      
-                      // FILTER BAR DITENGAHKAN
-                      Center(
-                        child: CustomFilterBar( // Gunakan widget CustomFilterBar Anda
-                          filters: const ['Admin', 'Petugas', 'Peminjam'],
-                          initialFilter: currentFilter,
-                          onFilterSelected: (val) => setState(() => currentFilter = val),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      Text(
-                        '$currentFilter : ${filteredList.length}',
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: filteredList.length,
-                          padding: const EdgeInsets.only(bottom: 100),
-                          itemBuilder: (context, index) => _buildMemberCard(filteredList[index]),
-                        ),
-                      ),
-                    ],
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _loadMembers,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1F4F6F),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      );
+    }
 
-          // FLOATING BUTTON
-          Positioned(
-            bottom: 35,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: GestureDetector(
-                onTap: () async {
-                  final result = await showDialog(
-                    context: context,
-                    builder: (context) => const AddMemberDialog(),
-                  );
-                  if (result != null) setState(() => _members.add(result));
-                },
-                child: Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1F4F6F),
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 40),
-                ),
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 25),
+          
+          // Filter Bar
+          Center(
+            child: CustomFilterBar(
+              filters: const ['Admin', 'Petugas', 'Peminjam'],
+              initialFilter: _currentFilter,
+              onFilterSelected: (val) {
+                setState(() => _currentFilter = val);
+                print('🔍 Filter changed to: $val');
+              },
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Counter
+          Text(
+            '$_currentFilter : ${_filteredMembers.length}',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // List
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadMembers,
+              color: const Color(0xFF1F4F6F),
+              child: _filteredMembers.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      itemCount: _filteredMembers.length,
+                      padding: const EdgeInsets.only(bottom: 100),
+                      itemBuilder: (context, index) {
+                        return _buildMemberCard(_filteredMembers[index]);
+                      },
+                    ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return ListView(
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  size: 80,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Tidak ada data $_currentFilter',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tarik ke bawah untuk refresh',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -148,34 +353,125 @@ class _MemberScreenState extends State<MemberScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(member.nama, 
-                style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-              Text(member.status, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.nama,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  member.status,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.edit_note, color: Colors.white, size: 30),
-                onPressed: () async {
-                  final result = await showDialog(
-                    context: context,
-                    builder: (context) => EditMemberDialog(member: member),
-                  );
-                  if (result != null) setState(() {});
-                },
+                icon: const Icon(
+                  Icons.edit_note,
+                  color: Colors.white,
+                  size: 30,
+                ),
+                onPressed: () => _handleEdit(member),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.white, size: 26),
-                onPressed: () => setState(() => _members.remove(member)),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.white,
+                  size: 26,
+                ),
+                onPressed: () => _handleDelete(member),
               ),
             ],
           )
         ],
       ),
     );
+  }
+
+  Future<void> _handleEdit(MemberModel member) async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => EditMemberDialog(member: member),
+    );
+    
+    if (result != null && result['success'] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Member berhasil diupdate'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      await _loadMembers();
+    }
+  }
+
+  Widget _buildFloatingButton() {
+    return Positioned(
+      bottom: 35,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: GestureDetector(
+          onTap: _handleAdd,
+          child: Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1F4F6F),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 40,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleAdd() async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => const AddMemberDialog(),
+    );
+    
+    if (result != null && result['success'] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Member berhasil ditambahkan'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      await _loadMembers();
+    }
   }
 }

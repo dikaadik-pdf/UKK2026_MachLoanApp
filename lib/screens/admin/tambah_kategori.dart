@@ -3,32 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 
-class TambahAlatDialog extends StatefulWidget {
+class TambahKategoriDialog extends StatefulWidget {
   final String username;
-  final int idKategori;
 
-  const TambahAlatDialog({
+  const TambahKategoriDialog({
     Key? key,
     required this.username,
-    required this.idKategori,
   }) : super(key: key);
 
   @override
-  State<TambahAlatDialog> createState() => _TambahAlatDialogState();
+  State<TambahKategoriDialog> createState() => _TambahKategoriDialogState();
 }
 
-class _TambahAlatDialogState extends State<TambahAlatDialog> {
+class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
   final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _stockController = TextEditingController();
-  final TextEditingController _dendaController = TextEditingController(text: '0');
-  String _kondisi = 'baik';
+  final TextEditingController _prefixController = TextEditingController();
   bool _loading = false;
 
   @override
   void dispose() {
     _namaController.dispose();
-    _stockController.dispose();
-    _dendaController.dispose();
+    _prefixController.dispose();
     super.dispose();
   }
 
@@ -48,7 +43,11 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     );
   }
 
-  Widget _inputField(TextEditingController controller, {bool number = false, String hint = ""}) {
+  Widget _inputField(
+    TextEditingController controller, {
+    String hint = "",
+    bool uppercase = false,
+  }) {
     return Container(
       width: 300,
       height: 50,
@@ -58,43 +57,20 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
       ),
       child: TextField(
         controller: controller,
-        keyboardType: number ? TextInputType.number : TextInputType.text,
-        style: const TextStyle(color: Colors.white),
+        textCapitalization: uppercase ? TextCapitalization.characters : TextCapitalization.none,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          letterSpacing: uppercase ? 1.2 : 0,
+        ),
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.3),
+            fontSize: 14,
+          ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        ),
-      ),
-    );
-  }
-
-  Widget _dropdownKondisi() {
-    return Container(
-      width: 300,
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _kondisi,
-          isExpanded: true,
-          dropdownColor: const Color(0xFF1F4F6F),
-          style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-          items: const [
-            DropdownMenuItem(value: 'baik', child: Text('Baik')),
-            DropdownMenuItem(value: 'rusak', child: Text('Rusak')),
-          ],
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _kondisi = value);
-            }
-          },
         ),
       ),
     );
@@ -130,29 +106,50 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "Tambah Alat",
+                      "Tambah Kategori",
                       style: GoogleFonts.poppins(
                         fontSize: 25,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Text(
+                        "Kategori baru akan otomatis mendapat ikon default. Anda bisa menggunakan icon yang sesuai dengan kategori.",
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                     const SizedBox(height: 30),
 
-                    _label("Nama Alat"),
-                    _inputField(_namaController, hint: "Masukkan nama alat"),
+                    _label("Nama Kategori"),
+                    _inputField(_namaController, hint: "Contoh: Alat Mesin"),
 
                     const SizedBox(height: 20),
-                    _label("Stok Total"),
-                    _inputField(_stockController, number: true, hint: "0"),
+                    _label("Kode Prefix (4 karakter)"),
+                    _inputField(
+                      _prefixController,
+                      hint: "Contoh: TMAT",
+                      uppercase: true,
+                    ),
 
-                    const SizedBox(height: 20),
-                    _label("Kondisi"),
-                    _dropdownKondisi(),
-
-                    const SizedBox(height: 20),
-                    _label("Denda Per Hari (Rp)"),
-                    _inputField(_dendaController, number: true, hint: "0"),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: Text(
+                        "Prefix digunakan untuk kode alat otomatis.\nContoh: TMAT001, TMAT002, dst.",
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: Colors.white60,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
 
                     const SizedBox(height: 40),
 
@@ -208,39 +205,27 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     if (_namaController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nama alat tidak boleh kosong'),
+          content: Text('Nama kategori tidak boleh kosong'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    if (_stockController.text.trim().isEmpty) {
+    if (_prefixController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Stok tidak boleh kosong'),
+          content: Text('Prefix tidak boleh kosong'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
-    final stock = int.tryParse(_stockController.text);
-    if (stock == null || stock < 0) {
+    if (_prefixController.text.trim().length > 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Stok harus berupa angka positif'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final denda = int.tryParse(_dendaController.text) ?? 0;
-    if (denda < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Denda harus berupa angka positif'),
+          content: Text('Prefix maksimal 10 karakter'),
           backgroundColor: Colors.red,
         ),
       );
@@ -250,19 +235,16 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     setState(() => _loading = true);
 
     try {
-      await SupabaseServices.tambahAlat(
-        namaAlat: _namaController.text.trim(),
-        idKategori: widget.idKategori,
-        stokTotal: stock,
-        kondisi: _kondisi,
-        dendaPerHari: denda,
+      await SupabaseServices.tambahKategori(
+        namaKategori: _namaController.text.trim(),
+        prefixKode: _prefixController.text.trim().toUpperCase(),
       );
 
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_namaController.text} berhasil ditambahkan'),
+            content: Text('Kategori "${_namaController.text}" berhasil ditambahkan'),
             backgroundColor: Colors.green,
           ),
         );
@@ -270,9 +252,15 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
+        
+        String errorMessage = 'Gagal menambah kategori';
+        if (e.toString().contains('duplicate')) {
+          errorMessage = 'Nama kategori atau prefix sudah digunakan';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menambah alat: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
           ),
         );
