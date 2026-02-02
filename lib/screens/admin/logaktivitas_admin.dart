@@ -19,7 +19,6 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
   List<LogAktivitasModel> _filteredLogs = [];
   bool _isLoading = true;
   String _errorMessage = '';
-  String? _selectedRole;
 
   @override
   void initState() {
@@ -57,30 +56,13 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
   void _filterSearch(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredLogs = _selectedRole != null
-            ? _allLogs.where((log) => log.role == _selectedRole).toList()
-            : _allLogs;
+        _filteredLogs = _allLogs;
       } else {
         _filteredLogs = _allLogs
             .where((log) =>
                 log.namaUser.toLowerCase().contains(query.toLowerCase()) ||
                 log.aksi.toLowerCase().contains(query.toLowerCase()))
-            .where((log) => _selectedRole != null ? log.role == _selectedRole : true)
             .toList();
-      }
-    });
-  }
-
- 
-  void _filterByRole(String? role) {
-    setState(() {
-      _selectedRole = role;
-      _searchController.clear();
-      
-      if (role == null) {
-        _filteredLogs = _allLogs;
-      } else {
-        _filteredLogs = _allLogs.where((log) => log.role == role).toList();
       }
     });
   }
@@ -143,43 +125,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
             ),
           ),
 
-          const SizedBox(height: 15),
-
-          // --- FILTER ROLE ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25),
-            child: Row(
-              children: [
-                Text(
-                  'Filter: ',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF1F4F6F),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildFilterChip('Semua', null),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Admin', 'admin'),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Petugas', 'petugas'),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Peminjam', 'peminjam'),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 15),
+          const SizedBox(height: 20),
 
           // --- MAIN CONTAINER ---
           Expanded(
@@ -192,32 +138,16 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Log Aktivitas',
-                        style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                  // Title - Centered
+                  Center(
+                    child: Text(
+                      'Log Aktivitas',
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF769DCB),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Text(
-                          '${_filteredLogs.length} aktivitas',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   
@@ -230,28 +160,6 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, String? role) {
-    final isSelected = _selectedRole == role;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) => _filterByRole(selected ? role : null),
-      backgroundColor: Colors.white,
-      selectedColor: const Color(0xFF769DCB),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 12,
-        color: isSelected ? Colors.white : const Color(0xFF1F4F6F),
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: isSelected ? const Color(0xFF769DCB) : Colors.grey.shade300,
-        ),
       ),
     );
   }
@@ -325,12 +233,15 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
       );
     }
 
+    // Batasi maksimal 5 aktivitas terbaru
+    final logsToDisplay = _filteredLogs.take(5).toList();
+
     return ListView.builder(
       padding: EdgeInsets.zero,
       physics: const BouncingScrollPhysics(),
-      itemCount: _filteredLogs.length,
+      itemCount: logsToDisplay.length,
       itemBuilder: (context, index) {
-        return _buildActivityCard(_filteredLogs[index]);
+        return _buildActivityCard(logsToDisplay[index]);
       },
     );
   }

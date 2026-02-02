@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ukk2026_machloanapp/screens/admin/edit_alat.dart';
-import 'package:ukk2026_machloanapp/screens/admin/tambah_alat.dart';
+import 'package:ukk2026_machloanapp/screens/admin/edit_alat_admin.dart';
+import 'package:ukk2026_machloanapp/screens/admin/tambah_alat_admin.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
 class AlatListScreen extends StatefulWidget {
   final String username;
@@ -98,23 +100,11 @@ class _AlatListScreenState extends State<AlatListScreen> {
   Future<void> _hapusAlat(int idAlat, String namaAlat) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus Alat?', style: GoogleFonts.poppins()),
-        content: Text(
-          'Yakin ingin menghapus "$namaAlat"?',
-          style: GoogleFonts.poppins(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDDDDDD)),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Hapus', style: GoogleFonts.poppins()),
-          ),
-        ],
+      builder: (context) => ConfirmationDialog(
+        title: 'Hmm..?',
+        subtitle: 'Yakin Nih Kamu Mau Hapus Alat Ini?',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
       ),
     );
 
@@ -122,10 +112,13 @@ class _AlatListScreenState extends State<AlatListScreen> {
       try {
         await SupabaseServices.hapusAlat(idAlat);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$namaAlat berhasil dihapus'),
-              backgroundColor: Colors.green,
+          // Tampilkan success dialog
+          await showDialog(
+            context: context,
+            builder: (context) => SuccessDialog(
+              title: 'Berhasil!',
+              subtitle: 'Alat berhasil dihapus',
+              onOk: () => Navigator.pop(context),
             ),
           );
           _loadAlat();

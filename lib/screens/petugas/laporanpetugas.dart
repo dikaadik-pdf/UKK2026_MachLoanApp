@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:ukk2026_machloanapp/services/supabase_services.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class LaporanPage extends StatefulWidget {
   final String username;
@@ -15,6 +21,273 @@ class LaporanPage extends StatefulWidget {
 
 class _LaporanPageState extends State<LaporanPage> {
   String selectedFilter = 'Semua';
+  bool isLoading = true;
+  List<Map<String, dynamic>> laporanData = [];
+  int totalAlat = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLaporan();
+  }
+
+  Future<void> _loadLaporan() async {
+    setState(() => isLoading = true);
+
+    try {
+      DateTime? startDate;
+      DateTime? endDate = DateTime.now();
+
+      // Tentukan range tanggal berdasarkan filter
+      switch (selectedFilter) {
+        case 'Hari Ini':
+          startDate = DateTime.now();
+          break;
+        case 'Minggu Ini':
+          startDate = DateTime.now().subtract(const Duration(days: 7));
+          break;
+        case 'Sebulan Ini':
+          startDate = DateTime.now().subtract(const Duration(days: 30));
+          break;
+        case 'Semua':
+        default:
+          startDate = null;
+          endDate = null;
+      }
+
+      // Load data dari database
+      final data = await SupabaseServices.getLaporanPeminjaman(
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      final total = await SupabaseServices.getTotalAlatDipinjam(
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        laporanData = data;
+        totalAlat = total;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+
+      showDialog(
+        context: context,
+        builder: (_) => SuccessDialog(
+          title: 'Error!',
+          subtitle: 'Gagal memuat laporan: $e',
+          onOk: () => Navigator.pop(context),
+        ),
+      );
+    }
+  }
+
+  Future<void> _printLaporan() async {
+    try {
+      final pdf = pw.Document();
+
+      // Format tanggal untuk header
+      final now = DateTime.now();
+      final dateFormat = DateFormat('dd MMMM yyyy', 'id_ID');
+      final filterText = _getFilterText();
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) => [
+            // Header
+            pw.Header(
+              level: 0,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'LAPORAN PEMINJAMAN ALAT',
+                    style: pw.TextStyle(
+                      fontSize: 20,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Text(
+                    'SMKS BRANTAS KARANGKATES',
+                    style: const pw.TextStyle(fontSize: 14),
+                  ),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                    'Tanggal Cetak: ${dateFormat.format(now)}',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.Text(
+                    'Filter: $filterText',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.Divider(thickness: 2),
+                ],
+              ),
+            ),
+
+            pw.SizedBox(height: 16),
+
+            // Total
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(width: 1),
+                borderRadius: pw.BorderRadius.circular(8),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'Total Alat Dipinjam:',
+                    style: pw.TextStyle(
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    '$totalAlat Item',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            pw.SizedBox(height: 20),
+
+            // Table Header
+            pw.Text(
+              'Detail Peminjaman',
+              style: pw.TextStyle(
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.SizedBox(height: 8),
+
+            // Table
+            pw.Table(
+              border: pw.TableBorder.all(),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1),
+                1: const pw.FlexColumnWidth(2),
+                2: const pw.FlexColumnWidth(1.5),
+                3: const pw.FlexColumnWidth(1.5),
+                4: const pw.FlexColumnWidth(1.5),
+                5: const pw.FlexColumnWidth(1),
+              },
+              children: [
+                // Header Row
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                  children: [
+                    _buildTableCell('No', isHeader: true),
+                    _buildTableCell('Nama Alat', isHeader: true),
+                    _buildTableCell('Kode Alat', isHeader: true),
+                    _buildTableCell('Tgl Pinjam', isHeader: true),
+                    _buildTableCell('Est. Kembali', isHeader: true),
+                    _buildTableCell('Jumlah', isHeader: true),
+                  ],
+                ),
+                // Data Rows
+                ...laporanData.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final detailList = item['detail_peminjaman'] as List;
+                  final detail = detailList.isNotEmpty ? detailList.first : null;
+                  final alat = detail?['alat'];
+
+                  return pw.TableRow(
+                    children: [
+                      _buildTableCell('${index + 1}'),
+                      _buildTableCell(alat?['nama_alat'] ?? '-'),
+                      _buildTableCell(alat?['kode_alat'] ?? '-'),
+                      _buildTableCell(_formatDate(item['tanggal_pinjam'])),
+                      _buildTableCell(_formatDate(item['estimasi_kembali'])),
+                      _buildTableCell('${detail?['jumlah'] ?? 0}'),
+                    ],
+                  );
+                }).toList(),
+              ],
+            ),
+          ],
+          footer: (context) => pw.Container(
+            alignment: pw.Alignment.centerRight,
+            margin: const pw.EdgeInsets.only(top: 16),
+            child: pw.Text(
+              'Halaman ${context.pageNumber} dari ${context.pagesCount}',
+              style: const pw.TextStyle(fontSize: 10),
+            ),
+          ),
+        ),
+      );
+
+      // Show print dialog
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+        name: 'Laporan_Peminjaman_${DateFormat('yyyyMMdd').format(now)}.pdf',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => SuccessDialog(
+          title: 'Error!',
+          subtitle: 'Gagal mencetak laporan: $e',
+          onOk: () => Navigator.pop(context),
+        ),
+      );
+    }
+  }
+
+  pw.Widget _buildTableCell(String text, {bool isHeader = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: isHeader ? 10 : 9,
+          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+        textAlign: pw.TextAlign.center,
+      ),
+    );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '-';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('d/MM/yy').format(date);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  String _getFilterText() {
+    switch (selectedFilter) {
+      case 'Hari Ini':
+        return 'Data Hari Ini';
+      case 'Minggu Ini':
+        return 'Data 7 Hari Terakhir';
+      case 'Sebulan Ini':
+        return 'Data 30 Hari Terakhir';
+      case 'Semua':
+      default:
+        return 'Semua Data';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +310,8 @@ class _LaporanPageState extends State<LaporanPage> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 22),
+                    icon: const Icon(Icons.arrow_back_ios,
+                        color: Colors.white, size: 22),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 5),
@@ -53,7 +327,6 @@ class _LaporanPageState extends State<LaporanPage> {
               ),
             ),
           ),
-
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
@@ -80,11 +353,9 @@ class _LaporanPageState extends State<LaporanPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 25),
-
                   Container(
-                    width: double.infinity, 
+                    width: double.infinity,
                     height: 70,
                     decoration: BoxDecoration(
                       boxShadow: [
@@ -96,8 +367,9 @@ class _LaporanPageState extends State<LaporanPage> {
                       ],
                     ),
                     child: ElevatedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.print, color: Colors.white, size: 30),
+                      onPressed: isLoading ? null : _printLaporan,
+                      icon: const Icon(Icons.print,
+                          color: Colors.white, size: 30),
                       label: Text(
                         "Print",
                         style: GoogleFonts.poppins(
@@ -108,6 +380,7 @@ class _LaporanPageState extends State<LaporanPage> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF333333),
+                        disabledBackgroundColor: Colors.grey,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -115,7 +388,6 @@ class _LaporanPageState extends State<LaporanPage> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 30),
 
                   // --- TOTAL CARD ---
@@ -144,20 +416,21 @@ class _LaporanPageState extends State<LaporanPage> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        Text(
-                          "34 Item",
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : Text(
+                                "$totalAlat Item",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 25),
-
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -171,8 +444,39 @@ class _LaporanPageState extends State<LaporanPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  _buildToolItem("Tang Potong", "1/2/26", "5/2/26"),
-                  _buildToolItem("Jangka Busur", "1/2/26", "5/2/26"),
+                  // Data list
+                  if (isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF1F4F6F),
+                      ),
+                    )
+                  else if (laporanData.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          'Tidak ada data peminjaman',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF1F4F6F),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ...laporanData.map((item) {
+                      final detailList = item['detail_peminjaman'] as List;
+                      final detail =
+                          detailList.isNotEmpty ? detailList.first : null;
+                      final alat = detail?['alat'];
+
+                      return _buildToolItem(
+                        alat?['nama_alat'] ?? 'Unknown',
+                        _formatDate(item['tanggal_pinjam']),
+                        _formatDate(item['estimasi_kembali']),
+                      );
+                    }).toList(),
                 ],
               ),
             ),
@@ -185,7 +489,10 @@ class _LaporanPageState extends State<LaporanPage> {
   Widget _buildFilterButton(String title) {
     bool isSelected = selectedFilter == title;
     return GestureDetector(
-      onTap: () => setState(() => selectedFilter = title),
+      onTap: () {
+        setState(() => selectedFilter = title);
+        _loadLaporan();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
@@ -230,10 +537,12 @@ class _LaporanPageState extends State<LaporanPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Tanggal Dipinjam : $dateOut", 
-                  style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10)),
-              Text("Estimasi Kembali: $dateIn", 
-                  style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10)),
+              Text("Tanggal Dipinjam : $dateOut",
+                  style: GoogleFonts.poppins(
+                      color: Colors.white70, fontSize: 10)),
+              Text("Estimasi Kembali: $dateIn",
+                  style: GoogleFonts.poppins(
+                      color: Colors.white70, fontSize: 10)),
             ],
           ),
         ],

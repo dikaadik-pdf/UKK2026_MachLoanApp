@@ -205,7 +205,7 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (_) => ConfirmationDialog(
         title: 'Hmm...',
-        subtitle: 'Yakin Nih Kamu Mau Keluar Dari Aplikasi? Jangan lupa password ya!',
+        subtitle: 'Yakin Nih Kamu Mau Keluar Dari Aplikasi?',
         onBack: () => Navigator.pop(context),
         onContinue: () async {
           Navigator.pop(context);
@@ -238,7 +238,7 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (_) => SuccessDialog(
         title: 'Dadah!',
-        subtitle: 'Anda telah keluar dari aplikasi.',
+        subtitle: 'Sampai Jumpa Lagi!, Ingat Kata Sandimu Ya!',
         onOk: () {
           Navigator.pushAndRemoveUntil(
             context,

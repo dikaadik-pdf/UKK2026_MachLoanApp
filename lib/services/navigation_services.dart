@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/dashboardpagepeminjam.dart';
 import '../models/users_models.dart';
-import 'package:ukk2026_machloanapp/screens/admin/dashboardpage.dart'; // ✅ PERBAIKI INI
+import 'package:ukk2026_machloanapp/screens/admin/dashboardpage_admin.dart'; // ✅ PERBAIKI INI
 import 'package:ukk2026_machloanapp/screens/petugas/dashboardpagepetugas.dart';
 
 class NavigationService {

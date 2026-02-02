@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:ukk2026_machloanapp/screens/admin/alat_screen.dart';
-import 'package:ukk2026_machloanapp/screens/admin/peminjaman.dart';
-import 'package:ukk2026_machloanapp/screens/admin/logaktivitas.dart';
-import 'package:ukk2026_machloanapp/screens/admin/memberscreen.dart';
+import 'package:ukk2026_machloanapp/screens/admin/alat_screen_admin.dart';
+import 'package:ukk2026_machloanapp/screens/admin/peminjaman_admin.dart';
+import 'package:ukk2026_machloanapp/screens/admin/logaktivitas_admin.dart';
+import 'package:ukk2026_machloanapp/screens/admin/memberscreen_admin.dart';
 import 'package:ukk2026_machloanapp/screens/logoutpage.dart';
 
 class DashboardScreenAdmin extends StatefulWidget {
@@ -220,7 +220,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
     );
   }
 
-  // ===== SIDEBAR (UPDATED) =====
+  // ===== SIDEBAR (FIXED) =====
   Widget _buildSidebar(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.transparent,
@@ -329,11 +329,14 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                 );
               }),
 
+              // ✅ FIXED: Ganti PinjamAlat dengan PeminjamanAdminScreen
               _buildSidebarItem(Icons.volunteer_activism, 'Peminjaman', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const PeminjamanScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const PeminjamanAdminScreen(),
+                  ),
                 );
               }),
 

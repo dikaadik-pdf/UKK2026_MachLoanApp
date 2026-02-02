@@ -42,6 +42,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // Fungsi untuk validasi format email
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Masukkan Email Anda!';
+    }
+    
+    // Regular expression untuk validasi email
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    
+    if (!emailRegex.hasMatch(value)) {
+      return 'Format email tidak valid!';
+    }
+    
+    return null;
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -80,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
           context: context,
           builder: (_) => SuccessDialog(
             title: 'Yah..',
-            subtitle: result['message'] ?? 'Email atau password salah',
+            subtitle:'Coba Cek Email atau Passwordmu Dulu Deh!',
             onOk: () => Navigator.pop(context),
           ),
         );
@@ -210,8 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
               _buildInput(
                 controller: _emailController,
                 hint: 'Masukkan Email',
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Masukkan Email!' : null,
+                validator: _validateEmail,
               ),
               const SizedBox(height: 25),
               _buildLabel('Password'),
@@ -220,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 hint: 'Masukkan Password',
                 obscure: _obscurePassword,
                 validator: (value) =>
-                    value == null || value.isEmpty ? 'Masukkan Password!' : null,
+                    value == null || value.isEmpty ? 'Masukkan Password Anda!' : null,
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -288,34 +305,62 @@ class _LoginScreenState extends State<LoginScreen> {
     bool obscure = false,
     Widget? suffix,
   }) {
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxWidth: 335),
-      height: 60,
-      margin: const EdgeInsets.only(top: 10),
-      decoration: BoxDecoration(
-        color: AppColors.innerContainer,
-        borderRadius: BorderRadius.circular(50),
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscure,
-        validator: validator,
-        style: GoogleFonts.poppins(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.poppins(color: Colors.white60),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
-          suffixIcon: suffix == null
-              ? null
-              : Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: suffix,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 335),
+          height: 60,
+          margin: const EdgeInsets.only(top: 10),
+          decoration: BoxDecoration(
+            color: AppColors.innerContainer,
+            borderRadius: BorderRadius.circular(50),
+          ),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscure,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: validator,
+            style: GoogleFonts.poppins(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: GoogleFonts.poppins(color: Colors.white60),
+              border: InputBorder.none,
+              errorStyle: const TextStyle(height: 0, fontSize: 0), 
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+              suffixIcon: suffix == null
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: suffix,
+                    ),
+            ),
+          ),
         ),
-      ),
+        ValueListenableBuilder(
+          valueListenable: controller,
+          builder: (context, value, child) {
+            final errorText = validator?.call(controller.text);
+            if (errorText == null) return const SizedBox.shrink();
+            
+            return Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 335),
+              padding: const EdgeInsets.only(left: 25, top: 8),
+              child: Text(
+                errorText,
+                style: GoogleFonts.poppins(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

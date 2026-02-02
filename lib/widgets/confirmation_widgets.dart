@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ConfirmationDialog extends StatelessWidget {
   final String title;
@@ -30,20 +31,18 @@ class ConfirmationDialog extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.w900,
+              style: GoogleFonts.poppins(
+                fontSize: 30,
+                fontWeight: FontWeight.w900, 
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
+
             const SizedBox(height: 16),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 17, color: Colors.white),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -65,10 +64,7 @@ class ConfirmationDialog extends StatelessWidget {
                     ),
                     child: const Text(
                       'Kembali',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFDDDDDD),
-                      ),
+                      style: TextStyle(fontSize: 16, color: Color(0xFFDDDDDD)),
                     ),
                   ),
                 ),
@@ -88,10 +84,7 @@ class ConfirmationDialog extends StatelessWidget {
                     ),
                     child: const Text(
                       'Lanjut',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFFDDDDDD),
-                      ),
+                      style: TextStyle(fontSize: 16, color: Color(0xFFDDDDDD)),
                     ),
                   ),
                 ),

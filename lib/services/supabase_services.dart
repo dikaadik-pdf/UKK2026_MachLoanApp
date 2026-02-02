@@ -377,4 +377,77 @@ class SupabaseServices {
       throw Exception('Alat tidak ditemukan');
     }
   }
+
+  // ==========================================
+  // LAPORAN SERVICES
+  // ==========================================
+
+  /// Get laporan peminjaman dengan filter waktu
+  static Future<List<Map<String, dynamic>>> getLaporanPeminjaman({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      var query = _client.from('peminjaman').select('''
+            id_peminjaman,
+            kode_peminjaman,
+            tanggal_pinjam,
+            estimasi_kembali,
+            status,
+            users!inner(username),
+            detail_peminjaman!inner(
+              jumlah,
+              alat!inner(nama_alat, kode_alat)
+            ),
+            pengembalian(tanggal_pengembalian, total_denda)
+          ''');
+
+      // Filter berdasarkan tanggal jika ada
+      if (startDate != null) {
+        query = query.gte('tanggal_pinjam', startDate.toIso8601String().split('T')[0]);
+      }
+      if (endDate != null) {
+        query = query.lte('tanggal_pinjam', endDate.toIso8601String().split('T')[0]);
+      }
+
+      final response = await query.order('tanggal_pinjam', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      throw Exception('Gagal memuat laporan: $e');
+    }
+  }
+
+  /// Get total jumlah alat yang dipinjam berdasarkan filter
+  static Future<int> getTotalAlatDipinjam({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      var query = _client.from('peminjaman').select('''
+            detail_peminjaman!inner(jumlah)
+          ''');
+
+      if (startDate != null) {
+        query = query.gte('tanggal_pinjam', startDate.toIso8601String().split('T')[0]);
+      }
+      if (endDate != null) {
+        query = query.lte('tanggal_pinjam', endDate.toIso8601String().split('T')[0]);
+      }
+
+      final response = await query;
+
+      int total = 0;
+      for (var item in response) {
+        final details = item['detail_peminjaman'] as List;
+        for (var detail in details) {
+          total += (detail['jumlah'] as int);
+        }
+      }
+
+      return total;
+    } catch (e) {
+      throw Exception('Gagal menghitung total: $e');
+    }
+  }
 }

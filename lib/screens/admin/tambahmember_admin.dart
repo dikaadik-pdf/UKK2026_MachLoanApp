@@ -1,40 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ukk2026_machloanapp/models/member_models.dart';
 import 'package:ukk2026_machloanapp/services/member_services.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
-class EditMemberDialog extends StatefulWidget {
-  final MemberModel member;
-  const EditMemberDialog({Key? key, required this.member}) : super(key: key);
+class AddMemberDialog extends StatefulWidget {
+  const AddMemberDialog({Key? key}) : super(key: key);
 
   @override
-  State<EditMemberDialog> createState() => _EditMemberDialogState();
+  State<AddMemberDialog> createState() => _AddMemberDialogState();
 }
 
-class _EditMemberDialogState extends State<EditMemberDialog> {
-  late TextEditingController _nameController;
-  late String _selectedRole;
+class _AddMemberDialogState extends State<AddMemberDialog> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   
   final MemberService _memberService = MemberService();
+  
+  String _selectedRole = 'Admin';
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.member.nama);
-    _selectedRole = widget.member.status; // 'Admin', 'Petugas', atau 'Peminjam'
-  }
-
-  Future<void> _handleUpdate() async {
+  Future<void> _handleSubmit() async {
+    // Validasi input
     if (_nameController.text.trim().isEmpty) {
       _showSnackbar('Nama tidak boleh kosong', isError: true);
       return;
     }
+    if (_emailController.text.trim().isEmpty) {
+      _showSnackbar('Email tidak boleh kosong', isError: true);
+      return;
+    }
+    if (_passwordController.text.trim().isEmpty) {
+      _showSnackbar('Password tidak boleh kosong', isError: true);
+      return;
+    }
+    if (_passwordController.text.length < 6) {
+      _showSnackbar('Password minimal 6 karakter', isError: true);
+      return;
+    }
+
+    // Tampilkan konfirmasi sebelum submit
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmationDialog(
+        title: 'Konfirmasi',
+        subtitle: 'Yakin ingin menambahkan anggota baru "${_nameController.text.trim()}" sebagai $_selectedRole?',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
+      ),
+    );
+
+    if (confirmed != true) return;
 
     setState(() => _isLoading = true);
 
-    final result = await _memberService.updateMember(
-      userId: widget.member.id,
+    final result = await _memberService.createMember(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
       username: _nameController.text.trim(),
       role: _memberService.roleToDatabase(_selectedRole),
     );
@@ -43,7 +67,20 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
 
     if (mounted) {
       if (result['success']) {
-        Navigator.pop(context, result);
+        // Tampilkan success dialog
+        await showDialog(
+          context: context,
+          builder: (context) => SuccessDialog(
+            title: 'Berhasil!',
+            subtitle: 'Anggota berhasil ditambahkan',
+            onOk: () => Navigator.pop(context),
+          ),
+        );
+        
+        // Tutup dialog utama dan kirim result
+        if (mounted) {
+          Navigator.pop(context, result);
+        }
       } else {
         _showSnackbar(result['message'], isError: true);
       }
@@ -63,6 +100,8 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -82,7 +121,7 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "Edit Anggota",
+                "Tambah Anggota",
                 style: GoogleFonts.poppins(
                   fontSize: 27,
                   color: Colors.white,
@@ -93,6 +132,26 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
 
               // Input Nama
               _buildField("Nama", _nameController),
+              const SizedBox(height: 14),
+
+              // Input Email
+              _buildField("Email", _emailController, keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 14),
+
+              // Input Password
+              _buildField(
+                "Password",
+                _passwordController,
+                obscureText: _obscurePassword,
+                suffix: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
               const SizedBox(height: 14),
 
               // Dropdown Role
@@ -112,9 +171,9 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _actionButton(
-                      "Simpan",
+                      "Tambah",
                       const Color(0xFF2F3A40),
-                      _isLoading ? null : _handleUpdate,
+                      _isLoading ? null : _handleSubmit,
                       isLoading: _isLoading,
                     ),
                   ),
@@ -127,7 +186,13 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool obscureText = false,
+    Widget? suffix,
+    TextInputType? keyboardType,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -148,10 +213,13 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
           ),
           child: TextField(
             controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
             style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              suffixIcon: suffix,
             ),
           ),
         ),

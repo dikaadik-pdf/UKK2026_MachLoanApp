@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
 class EditAlatDialog extends StatefulWidget {
   final String username;
@@ -242,21 +244,80 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
 
   // ================= UPDATE LOGIC =================
   void _handleUpdate() async {
+    // Validasi
+    if (_namaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nama alat tidak boleh kosong'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final stock = int.tryParse(_stockController.text);
-    final denda = int.tryParse(_dendaController.text) ?? 0;
+    if (stock == null || stock <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Stok harus diisi dengan angka yang valid'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Tampilkan konfirmasi sebelum update
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmationDialog(
+        title: 'Konfirmasi',
+        subtitle: 'Yakin ingin menyimpan perubahan data alat?',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
+      ),
+    );
+
+    if (confirmed != true) return;
 
     setState(() => _loading = true);
 
-    await SupabaseServices.updateAlat(
-      idAlat: widget.idAlat,
-      namaAlat: _namaController.text.trim(),
-      stokTotal: stock,
-      kondisi: _kondisi,
-      dendaPerHari: denda.toDouble(), // 🔥 FIX UTAMA
-    );
+    try {
+      final denda = int.tryParse(_dendaController.text) ?? 0;
 
-    if (mounted) {
-      Navigator.pop(context, true);
+      await SupabaseServices.updateAlat(
+        idAlat: widget.idAlat,
+        namaAlat: _namaController.text.trim(),
+        stokTotal: stock,
+        kondisi: _kondisi,
+        dendaPerHari: denda.toDouble(),
+      );
+
+      if (mounted) {
+        // Tampilkan success dialog
+        await showDialog(
+          context: context,
+          builder: (context) => SuccessDialog(
+            title: 'Berhasil!',
+            subtitle: 'Data alat berhasil diperbarui',
+            onOk: () => Navigator.pop(context),
+          ),
+        );
+
+        // Tutup dialog utama
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui alat: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

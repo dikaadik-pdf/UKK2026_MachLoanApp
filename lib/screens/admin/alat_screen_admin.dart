@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/widgets/searchbar_widgets.dart';
-import 'package:ukk2026_machloanapp/screens/admin/alat_list.dart';
-import 'package:ukk2026_machloanapp/screens/admin/tambah_kategori.dart';
+import 'package:ukk2026_machloanapp/screens/admin/alat_list_admin.dart';
+import 'package:ukk2026_machloanapp/screens/admin/tambah_kategori_admin.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

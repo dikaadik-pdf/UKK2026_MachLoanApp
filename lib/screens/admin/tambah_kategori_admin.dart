@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
 class TambahKategoriDialog extends StatefulWidget {
   final String username;
@@ -232,6 +234,19 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
       return;
     }
 
+    // Tampilkan konfirmasi sebelum simpan
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmationDialog(
+        title: 'Konfirmasi',
+        subtitle: 'Yakin ingin menambahkan kategori "${_namaController.text.trim()}"?',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
+      ),
+    );
+
+    if (confirmed != true) return;
+
     setState(() => _loading = true);
 
     try {
@@ -241,13 +256,20 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
       );
 
       if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Kategori "${_namaController.text}" berhasil ditambahkan'),
-            backgroundColor: Colors.green,
+        // Tampilkan success dialog
+        await showDialog(
+          context: context,
+          builder: (context) => SuccessDialog(
+            title: 'Berhasil!',
+            subtitle: 'Kategori berhasil ditambahkan',
+            onOk: () => Navigator.pop(context),
           ),
         );
+
+        // Tutup dialog utama
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       }
     } catch (e) {
       if (mounted) {

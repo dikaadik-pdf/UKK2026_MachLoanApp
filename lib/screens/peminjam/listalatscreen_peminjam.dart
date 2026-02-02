@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/pinjamalat.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
 class AlatListPeminjam extends StatefulWidget {
   final String username;
@@ -71,8 +72,13 @@ class _AlatListPeminjamState extends State<AlatListPeminjam> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      showDialog(
+        context: context,
+        builder: (_) => SuccessDialog(
+          title: 'Error!',
+          subtitle: 'Gagal memuat data: $e',
+          onOk: () => Navigator.pop(context),
+        ),
       );
     }
   }
@@ -281,7 +287,7 @@ class _AlatListPeminjamState extends State<AlatListPeminjam> {
                                       ),
                                     ),
 
-                                    // ===== TOMBOL PEMINJAM (UPDATED) =====
+                                    // ===== TOMBOL PEMINJAM =====
                                     InkWell(
                                       onTap: isAvailable
                                           ? () {
@@ -292,8 +298,8 @@ class _AlatListPeminjamState extends State<AlatListPeminjam> {
                                                   namaAlat: alat['nama_alat'],
                                                   kategori: widget.namaKategori,
                                                   stokTersedia: alat['stok_tersedia'],
-                                                  idAlat: alat['id_alat'], // TAMBAHAN
-                                                  username: widget.username, // TAMBAHAN
+                                                  idAlat: alat['id_alat'],
+                                                  username: widget.username,
                                                 ),
                                               );
                                             }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
 class PinjamAlat extends StatefulWidget {
   final String namaAlat;
@@ -47,10 +48,12 @@ class _PinjamAlatState extends State<PinjamAlat> {
 
   Future<void> _submitPeminjaman() async {
     if (tanggalPinjam == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pilih tanggal peminjaman terlebih dahulu'),
-          backgroundColor: Colors.red,
+      showDialog(
+        context: context,
+        builder: (_) => SuccessDialog(
+          title: 'Perhatian!',
+          subtitle: 'Pilih tanggal peminjaman terlebih dahulu',
+          onOk: () => Navigator.pop(context),
         ),
       );
       return;
@@ -74,25 +77,28 @@ class _PinjamAlatState extends State<PinjamAlat> {
       if (!mounted) return;
 
       // Tampilkan pesan sukses
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Peminjaman berhasil diajukan! Menunggu persetujuan petugas.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => SuccessDialog(
+          title: 'Berhasil!',
+          subtitle: 'Peminjaman berhasil diajukan! Menunggu persetujuan petugas.',
+          onOk: () {
+            Navigator.pop(context); // Tutup dialog
+            Navigator.pop(context); // Tutup form peminjaman
+          },
         ),
       );
-
-      // Tutup dialog
-      Navigator.pop(context);
 
     } catch (e) {
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal mengajukan peminjaman: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
+      showDialog(
+        context: context,
+        builder: (_) => SuccessDialog(
+          title: 'Gagal!',
+          subtitle: 'Gagal mengajukan peminjaman: $e',
+          onOk: () => Navigator.pop(context),
         ),
       );
     } finally {

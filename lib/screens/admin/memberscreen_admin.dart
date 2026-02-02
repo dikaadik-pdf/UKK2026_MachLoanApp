@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/models/member_models.dart';
-import 'package:ukk2026_machloanapp/screens/admin/tambahmember.dart';
-import 'package:ukk2026_machloanapp/screens/admin/editmember.dart';
+import 'package:ukk2026_machloanapp/screens/admin/tambahmember_admin.dart';
+import 'package:ukk2026_machloanapp/screens/admin/editmember_admin.dart';
 import 'package:ukk2026_machloanapp/widgets/filter_widgets.dart';
 import 'package:ukk2026_machloanapp/services/member_services.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
 class MemberScreen extends StatefulWidget {
   const MemberScreen({super.key});
@@ -62,44 +64,11 @@ class _MemberScreenState extends State<MemberScreen> {
   Future<void> _handleDelete(MemberModel member) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F4F6F),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'Konfirmasi Hapus',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'Yakin ingin menghapus ${member.nama}?\nAkun login mereka juga akan terhapus.',
-          style: GoogleFonts.poppins(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Batal',
-              style: GoogleFonts.poppins(color: Colors.white70),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text(
-              'Hapus',
-              style: GoogleFonts.poppins(color: Colors.white),
-            ),
-          ),
-        ],
+      builder: (context) => ConfirmationDialog(
+        title: 'Konfirmasi Hapus',
+        subtitle: 'Yakin ingin menghapus ${member.nama}?\nAkun login mereka juga akan terhapus.',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
       ),
     );
 
@@ -118,17 +87,27 @@ class _MemberScreenState extends State<MemberScreen> {
     
     if (mounted) {
       Navigator.pop(context); // Close loading
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: result['success'] ? Colors.green : Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
 
       if (result['success']) {
+        // Tampilkan success dialog
+        await showDialog(
+          context: context,
+          builder: (context) => SuccessDialog(
+            title: 'Berhasil!',
+            subtitle: 'Anggota berhasil dihapus',
+            onOk: () => Navigator.pop(context),
+          ),
+        );
+
         await _loadMembers();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -409,15 +388,6 @@ class _MemberScreenState extends State<MemberScreen> {
     );
     
     if (result != null && result['success'] == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Member berhasil diupdate'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
       await _loadMembers();
     }
   }
@@ -462,15 +432,6 @@ class _MemberScreenState extends State<MemberScreen> {
     );
     
     if (result != null && result['success'] == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Member berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
       await _loadMembers();
     }
   }
