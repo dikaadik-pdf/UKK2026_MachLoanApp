@@ -249,11 +249,8 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => PeminjamAlatScreen(
+                    builder: (_) => AlatScreenPeminjam(
                       username: widget.username,
-                      idKategori: 1,
-                      namaKategori: 'Alat',
-                      kategoriIcon: Icons.build,
                     ),
                   ),
                 );

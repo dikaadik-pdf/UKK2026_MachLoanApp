@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/screens/splashscreen.dart';
 import '../services/auth_services.dart';
 import '../services/session_services.dart';
+import '../widgets/confirmation_widgets.dart';
+import '../widgets/notification_widgets.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -14,7 +16,7 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   final AuthService _authService = AuthService();
   final SessionService _sessionService = SessionService();
-  
+
   String _userName = 'Loading...';
   String _userRole = '';
 
@@ -40,7 +42,7 @@ class _AccountScreenState extends State<AccountScreen> {
       backgroundColor: const Color(0xFFD9D9D9),
       body: Column(
         children: [
-          // --- HEADER / APPBAR ---
+          // ================= HEADER =================
           Container(
             width: double.infinity,
             height: 120,
@@ -56,7 +58,8 @@ class _AccountScreenState extends State<AccountScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                    icon: const Icon(Icons.arrow_back_ios,
+                        color: Colors.white, size: 20),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Text(
@@ -72,7 +75,7 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
 
-          // --- CONTENT AREA ---
+          // ================= CONTENT =================
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -80,7 +83,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 children: [
                   const SizedBox(height: 30),
 
-                  // CARD PROFIL USER
+                  // ---------- CARD PROFIL ----------
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -92,7 +95,7 @@ class _AccountScreenState extends State<AccountScreen> {
                           color: Colors.black.withOpacity(0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ],
                     ),
                     child: Row(
@@ -100,7 +103,8 @@ class _AccountScreenState extends State<AccountScreen> {
                         const CircleAvatar(
                           radius: 35,
                           backgroundColor: Color(0xFF769DCB),
-                          child: Icon(Icons.person, size: 50, color: Colors.white),
+                          child: Icon(Icons.person,
+                              size: 50, color: Colors.white),
                         ),
                         const SizedBox(width: 20),
                         Column(
@@ -129,20 +133,13 @@ class _AccountScreenState extends State<AccountScreen> {
 
                   const SizedBox(height: 25),
 
-                  // CARD INFORMASI SISTEM
+                  // ---------- INFORMASI SISTEM ----------
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1F4F6F),
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,37 +152,27 @@ class _AccountScreenState extends State<AccountScreen> {
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        const Divider(color: Colors.white24, thickness: 1),
+                        const Divider(color: Colors.white24),
                         _buildInfoRow('Nama Aplikasi', 'MachLoan App'),
                         const Divider(color: Colors.white24),
                         _buildInfoRow('Versi Aplikasi', 'V1.0.0'),
                         const Divider(color: Colors.white24),
-                        _buildInfoRow('Didukung Oleh', 'SMKS BRANTAS KARANGKATES'),
+                        _buildInfoRow(
+                            'Didukung Oleh', 'SMKS BRANTAS KARANGKATES'),
                       ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-                  
-                  // Footer Text
-                  Text(
-                    'MachLoan ©2026 Teknik Mesin',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Colors.black54,
                     ),
                   ),
 
                   const SizedBox(height: 60),
 
-                  // --- BUTTON LOGOUT ---
+                  // ---------- BUTTON LOGOUT ----------
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton.icon(
                       onPressed: () => _showLogoutDialog(context),
-                      icon: const Icon(Icons.logout, color: Colors.white, size: 28),
+                      icon: const Icon(Icons.logout,
+                          color: Colors.white, size: 28),
                       label: Text(
                         'LogOut',
                         style: GoogleFonts.poppins(
@@ -199,11 +186,9 @@ class _AccountScreenState extends State<AccountScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
                         ),
-                        elevation: 4,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -212,69 +197,56 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
     );
   }
+
+  // ================= LOGOUT FLOW =================
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Text(
-            'Konfirmasi Logout',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'Apakah Anda yakin ingin keluar dari aplikasi?',
-            style: GoogleFonts.poppins(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Batal',
-                style: GoogleFonts.poppins(color: Colors.grey),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context); 
-                
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                );
+      barrierDismissible: false,
+      builder: (_) => ConfirmationDialog(
+        title: 'Hmm...',
+        subtitle: 'Yakin Nih Kamu Mau Keluar Dari Aplikasi? Jangan lupa password ya!',
+        onBack: () => Navigator.pop(context),
+        onContinue: () async {
+          Navigator.pop(context);
 
-  
-                await _sessionService.clear();
-                
-              
-                _authService.logout().catchError((e) {
-                  print('Logout Supabase error (diabaikan): $e');
-                });
-
-                if (mounted) {
-                  Navigator.pop(context);
-         
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SplashScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              child: Text(
-                'Ya, Keluar',
-                style: GoogleFonts.poppins(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(color: Colors.white),
             ),
-          ],
-        );
-      },
+          );
+
+          try {
+            await _sessionService.clear();
+            await _authService.logout();
+          } catch (_) {}
+
+          if (!mounted) return;
+          Navigator.pop(context);
+
+          _showLogoutSuccess(context);
+        },
+      ),
+    );
+  }
+
+  void _showLogoutSuccess(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => SuccessDialog(
+        title: 'Dadah!',
+        subtitle: 'Anda telah keluar dari aplikasi.',
+        onOk: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const SplashScreen()),
+            (route) => false,
+          );
+        },
+      ),
     );
   }
 
@@ -284,21 +256,14 @@ class _AccountScreenState extends State<AccountScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
-          ),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
+          Text(label,
               style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-          ),
+                  color: Colors.white70, fontSize: 13)),
+          Text(value,
+              style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13)),
         ],
       ),
     );

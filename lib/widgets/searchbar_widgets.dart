@@ -4,15 +4,13 @@ class CustomSearchBar extends StatelessWidget {
   final TextEditingController? controller;
   final String hintText;
   final ValueChanged<String>? onChanged;
-  final VoidCallback? onTap;
 
   const CustomSearchBar({
-    Key? key,
+    super.key,
     this.controller,
     this.hintText = 'Cari Alat Disini!',
     this.onChanged,
-    this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,28 +22,15 @@ class CustomSearchBar extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
-        onChanged: onChanged,
-        onTap: onTap,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-        ),
+        onChanged: onChanged, // 🔥 tiap 1 huruf langsung trigger
+        style: const TextStyle(color: Colors.white, fontSize: 16),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(
-            color: Colors.white70,
-            fontSize: 16,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: Colors.white,
-            size: 20,
-          ),
+          hintStyle: const TextStyle(color: Colors.white70),
+          prefixIcon: const Icon(Icons.search, color: Colors.white),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 12,
-          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         ),
       ),
     );

@@ -106,17 +106,12 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
       type: MaterialType.transparency,
       child: Stack(
         children: [
-          // EFEK BLUR LATAR BELAKANG
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                color: Colors.black.withOpacity(0.3),
-              ),
+              child: Container(color: Colors.black.withOpacity(0.3)),
             ),
           ),
-
-          // KONTEN DIALOG
           Center(
             child: Container(
               width: 345,
@@ -140,11 +135,11 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
                     const SizedBox(height: 30),
 
                     _label("Nama Alat"),
-                    _inputField(_namaController, hint: "Masukkan nama alat"),
+                    _inputField(_namaController),
 
                     const SizedBox(height: 20),
                     _label("Stok Total"),
-                    _inputField(_stockController, number: true, hint: "0"),
+                    _inputField(_stockController, number: true),
 
                     const SizedBox(height: 20),
                     _label("Kondisi"),
@@ -152,11 +147,10 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
 
                     const SizedBox(height: 20),
                     _label("Denda Per Hari (Rp)"),
-                    _inputField(_dendaController, number: true, hint: "0"),
+                    _inputField(_dendaController, number: true),
 
                     const SizedBox(height: 40),
 
-                    // TOMBOL AKSI
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -204,79 +198,19 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
   }
 
   void _handleSave() async {
-    // Validasi
-    if (_namaController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nama alat tidak boleh kosong'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (_stockController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stok tidak boleh kosong'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final stock = int.tryParse(_stockController.text);
-    if (stock == null || stock < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stok harus berupa angka positif'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final denda = int.tryParse(_dendaController.text) ?? 0;
-    if (denda < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Denda harus berupa angka positif'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     setState(() => _loading = true);
 
-    try {
-      await SupabaseServices.tambahAlat(
-        namaAlat: _namaController.text.trim(),
-        idKategori: widget.idKategori,
-        stokTotal: stock,
-        kondisi: _kondisi,
-        dendaPerHari: denda,
-      );
+    await SupabaseServices.tambahAlat(
+      namaAlat: _namaController.text.trim(),
+      idKategori: widget.idKategori,
+      stokTotal: stock!,
+      kondisi: _kondisi,
+      dendaPerHari: denda.toDouble(), // 🔧 FIX
+    );
 
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_namaController.text} berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menambah alat: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    if (mounted) Navigator.pop(context, true);
   }
 }

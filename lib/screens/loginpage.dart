@@ -6,6 +6,7 @@ import '../services/auth_services.dart';
 import '../services/session_services.dart';
 import '../services/navigation_services.dart';
 import '../widgets/notification_widgets.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
@@ -41,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _handleLogin() async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -55,6 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
+      // ===== LOGIN BERHASIL =====
       if (result['success'] == true) {
         final user = result['user'] as UserModel;
         await _sessionService.saveSession(user);
@@ -63,19 +65,23 @@ class _LoginScreenState extends State<LoginScreen> {
           context: context,
           barrierDismissible: false,
           builder: (_) => SuccessDialog(
-            title: "Berhasil!",
-            subtitle: "Selamat datang, ${user.username}",
+            title: 'Berhasil!',
+            subtitle: 'Selamat datang, ${user.username}',
             onOk: () {
               Navigator.pop(context);
               NavigationService.navigateToHomeByRole(context, user);
             },
           ),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Login gagal!'),
-            backgroundColor: Colors.red,
+      }
+      // ===== LOGIN GAGAL =====
+      else {
+        showDialog(
+          context: context,
+          builder: (_) => SuccessDialog(
+            title: 'Yah..',
+            subtitle: result['message'] ?? 'Email atau password salah',
+            onOk: () => Navigator.pop(context),
           ),
         );
       }
@@ -83,10 +89,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Terjadi kesalahan: $e'),
-          backgroundColor: Colors.red,
+      // ===== ERROR TAK TERDUGA =====
+      showDialog(
+        context: context,
+        builder: (_) => SuccessDialog(
+          title: 'Terjadi Kesalahan',
+          subtitle: e.toString(),
+          onOk: () => Navigator.pop(context),
         ),
       );
     }
@@ -201,12 +210,8 @@ class _LoginScreenState extends State<LoginScreen> {
               _buildInput(
                 controller: _emailController,
                 hint: 'Masukkan Email',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Masukkan Email!';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Masukkan Email!' : null,
               ),
               const SizedBox(height: 25),
               _buildLabel('Password'),
@@ -214,12 +219,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _passwordController,
                 hint: 'Masukkan Password',
                 obscure: _obscurePassword,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Masukkan Password!';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Masukkan Password!' : null,
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -227,11 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         : Icons.visibility,
                     color: Colors.white70,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
               const SizedBox(height: 40),
@@ -277,10 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
         alignment: Alignment.centerLeft,
         child: Text(
           text,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            color: AppColors.white,
-          ),
+          style: GoogleFonts.poppins(fontSize: 16, color: Colors.white),
         ),
       ),
     );
@@ -311,13 +306,14 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: hint,
           hintStyle: GoogleFonts.poppins(color: Colors.white60),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
-          suffixIcon: suffix != null 
-              ? Padding(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+          suffixIcon: suffix == null
+              ? null
+              : Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: suffix,
-                )
-              : null,
+                ),
         ),
       ),
     );

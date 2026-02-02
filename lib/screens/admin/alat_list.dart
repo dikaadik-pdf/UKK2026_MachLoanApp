@@ -74,10 +74,7 @@ class _AlatListScreenState extends State<AlatListScreen> {
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -113,7 +110,7 @@ class _AlatListScreenState extends State<AlatListScreen> {
             child: Text('Batal', style: GoogleFonts.poppins()),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDDDDDD)),
             onPressed: () => Navigator.pop(context, true),
             child: Text('Hapus', style: GoogleFonts.poppins()),
           ),
@@ -170,8 +167,11 @@ class _AlatListScreenState extends State<AlatListScreen> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios,
-                            color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         onPressed: () => Navigator.pop(context),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -198,7 +198,10 @@ class _AlatListScreenState extends State<AlatListScreen> {
               // ===== CONTENT =====
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 20,
+                  ),
                   child: Column(
                     children: [
                       // SEARCH BAR
@@ -222,7 +225,10 @@ class _AlatListScreenState extends State<AlatListScreen> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            icon: const Icon(Icons.search, color: Colors.white70),
+                            icon: const Icon(
+                              Icons.search,
+                              color: Colors.white70,
+                            ),
                             hintText: "Cari Alat Disini!",
                             hintStyle: GoogleFonts.poppins(
                               color: Colors.white70,
@@ -244,209 +250,255 @@ class _AlatListScreenState extends State<AlatListScreen> {
                                 ),
                               )
                             : _filteredAlatList.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.inventory_2_outlined,
-                                          size: 80,
-                                          color: Colors.grey[400],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          _searchController.text.isEmpty
-                                              ? 'Belum ada alat'
-                                              : 'Alat tidak ditemukan',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 16,
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          _searchController.text.isEmpty
-                                              ? 'Tekan tombol + untuk menambah alat'
-                                              : 'Coba kata kunci lain',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13,
-                                            color: Colors.grey[500],
-                                          ),
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.inventory_2_outlined,
+                                      size: 80,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _searchController.text.isEmpty
+                                          ? 'Belum ada alat'
+                                          : 'Alat tidak ditemukan',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _searchController.text.isEmpty
+                                          ? 'Tekan tombol + untuk menambah alat'
+                                          : 'Coba kata kunci lain',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: _filteredAlatList.length,
+                                itemBuilder: (context, index) {
+                                  final alat = _filteredAlatList[index];
+                                  final bool isAvailable =
+                                      alat['stok_tersedia'] > 0;
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 14),
+                                    padding: const EdgeInsets.all(18),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1F4F6F),
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.18),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 3),
                                         ),
                                       ],
                                     ),
-                                  )
-                                : ListView.builder(
-                                    itemCount: _filteredAlatList.length,
-                                    itemBuilder: (context, index) {
-                                      final alat = _filteredAlatList[index];
-                                      final bool isAvailable = alat['stok_tersedia'] > 0;
-
-                                      return Container(
-                                        margin: const EdgeInsets.only(bottom: 14),
-                                        padding: const EdgeInsets.all(18),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1F4F6F),
-                                          borderRadius: BorderRadius.circular(18),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.18),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 3),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 50,
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(
+                                              0.1,
                                             ),
-                                          ],
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.build_circle_outlined,
+                                            color: isAvailable
+                                                ? Colors.white70
+                                                : Colors.white38,
+                                            size: 28,
+                                          ),
                                         ),
-                                        child: Row(
-                                          children: [
-                                             Container(
-                                              width: 50,
-                                              height: 50,
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Icon(
-                                                Icons.build_circle_outlined,
-                                                color: isAvailable
-                                                    ? Colors.white70
-                                                    : Colors.white38,
-                                                size: 28,
-                                              ),
-                                            ),
 
-                                            const SizedBox(width: 15),
+                                        const SizedBox(width: 15),
 
-                                            // INFO
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                        // INFO
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                alat['nama_alat'],
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Kode: ${alat['kode_alat']}',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white60,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Row(
                                                 children: [
                                                   Text(
-                                                    alat['nama_alat'],
+                                                    'Stok: ${alat['stok_tersedia']}/${alat['stok_total']}',
                                                     style: GoogleFonts.poppins(
-                                                      color: Colors.white,
-                                                      fontSize: 20,
-                                                      fontWeight: FontWeight.w900,
+                                                      color: Colors.white70,
+                                                      fontSize: 13,
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'Kode: ${alat['kode_alat']}',
-                                                    style: GoogleFonts.poppins(
-                                                      color: Colors.white60,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 6),
-                                                  Row(
-                                                    children: [
-                                                      Text(
-                                                        'Stok: ${alat['stok_tersedia']}/${alat['stok_total']}',
-                                                        style: GoogleFonts.poppins(
-                                                          color: Colors.white70,
-                                                          fontSize: 13,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 12),
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(
+                                                  const SizedBox(width: 12),
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
                                                           horizontal: 8,
                                                           vertical: 2,
                                                         ),
-                                                        decoration: BoxDecoration(
-                                                          color: isAvailable
-                                                              ? Colors.green.withOpacity(0.3)
-                                                              : Colors.red.withOpacity(0.3),
-                                                          borderRadius:
-                                                              BorderRadius.circular(8),
-                                                        ),
-                                                        child: Text(
-                                                          isAvailable ? 'Tersedia' : 'Habis',
-                                                          style: GoogleFonts.poppins(
-                                                            color: isAvailable
-                                                                ? Colors.greenAccent
-                                                                : Colors.redAccent,
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.w600,
+                                                    decoration: BoxDecoration(
+                                                      color: isAvailable
+                                                          ? Colors.green
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                )
+                                                          : Colors.red
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
                                                           ),
-                                                        ),
+                                                    ),
+                                                    child: Text(
+                                                      isAvailable
+                                                          ? 'Tersedia'
+                                                          : 'Habis',
+                                                      style: GoogleFonts.poppins(
+                                                        color: isAvailable
+                                                            ? Colors.greenAccent
+                                                            : Colors.redAccent,
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                       ),
-                                                      const SizedBox(width: 8),
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
                                                           horizontal: 8,
                                                           vertical: 2,
                                                         ),
-                                                        decoration: BoxDecoration(
-                                                          color: alat['kondisi'] == 'baik'
-                                                              ? Colors.blue.withOpacity(0.3)
-                                                              : Colors.orange.withOpacity(0.3),
-                                                          borderRadius:
-                                                              BorderRadius.circular(8),
-                                                        ),
-                                                        child: Text(
-                                                          alat['kondisi'].toString().toUpperCase(),
-                                                          style: GoogleFonts.poppins(
-                                                            color: alat['kondisi'] == 'baik'
-                                                                ? Colors.lightBlueAccent
-                                                                : Colors.orangeAccent,
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.w600,
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          alat['kondisi'] ==
+                                                              'baik'
+                                                          ? Colors.blue
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                )
+                                                          : Colors.orange
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
                                                           ),
-                                                        ),
+                                                    ),
+                                                    child: Text(
+                                                      alat['kondisi']
+                                                          .toString()
+                                                          .toUpperCase(),
+                                                      style: GoogleFonts.poppins(
+                                                        color:
+                                                            alat['kondisi'] ==
+                                                                'baik'
+                                                            ? Colors
+                                                                  .lightBlueAccent
+                                                            : Colors
+                                                                  .orangeAccent,
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                       ),
-                                                    ],
+                                                    ),
                                                   ),
                                                 ],
                                               ),
-                                            ),
-
-                                            // ACTIONS (Edit & Delete) - Horizontal
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(Icons.edit_outlined,
-                                                      color: Colors.white70, size: 22),
-                                                  onPressed: () async {
-                                                    final result = await Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (_) => EditAlatDialog(
-                                                          username: widget.username,
-                                                          idAlat: alat['id_alat'],
-                                                          namaAlat: alat['nama_alat'],
-                                                          stock: alat['stok_total'],
-                                                          kondisi: alat['kondisi'],
-                                                          dendaPerHari: alat['denda_per_hari'],
-                                                        ),
-                                                      ),
-                                                    );
-                                                    if (result == true) {
-                                                      _loadAlat();
-                                                    }
-                                                  },
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.delete_outline,
-                                                      color: Colors.redAccent, size: 22),
-                                                  onPressed: () => _hapusAlat(
-                                                    alat['id_alat'],
-                                                    alat['nama_alat'],
+                                            ],
+                                          ),
+                                        ),
+                                        
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () async {
+                                                final result = await Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => EditAlatDialog(
+                                                      username: widget.username,
+                                                      idAlat: alat['id_alat'],
+                                                      namaAlat:
+                                                          alat['nama_alat'],
+                                                      stock: alat['stok_total'],
+                                                      kondisi: alat['kondisi'],
+                                                      dendaPerHari:
+                                                          alat['denda_per_hari'],
+                                                    ),
                                                   ),
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
+                                                );
+                                                if (result == true) {
+                                                  _loadAlat();
+                                                }
+                                              },
+                                              child: const Padding(
+                                                padding: EdgeInsets.all(4),
+                                                child: Icon(
+                                                  Icons.edit_outlined,
+                                                  color: Colors.white70,
+                                                  size: 22,
                                                 ),
-                                              ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            GestureDetector(
+                                              onTap: () => _hapusAlat(
+                                                alat['id_alat'],
+                                                alat['nama_alat'],
+                                              ),
+                                              child: const Padding(
+                                                padding: EdgeInsets.all(4),
+                                                child: Icon(
+                                                  Icons.delete_outline,
+                                                  color: Colors.redAccent,
+                                                  size: 22,
+                                                ),
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      );
-                                    },
-                                  ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),

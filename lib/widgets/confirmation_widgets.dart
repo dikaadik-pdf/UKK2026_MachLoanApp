@@ -31,8 +31,8 @@ class ConfirmationDialog extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
+                fontSize: 25,
+                fontWeight: FontWeight.w900,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,
@@ -41,7 +41,7 @@ class ConfirmationDialog extends StatelessWidget {
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 15,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,

@@ -37,7 +37,8 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     super.initState();
     _namaController = TextEditingController(text: widget.namaAlat);
     _stockController = TextEditingController(text: widget.stock.toString());
-    _dendaController = TextEditingController(text: widget.dendaPerHari.toString());
+    _dendaController =
+        TextEditingController(text: widget.dendaPerHari.toString());
     _kondisi = widget.kondisi;
   }
 
@@ -55,7 +56,7 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
       type: MaterialType.transparency,
       child: Stack(
         children: [
-          // BACKGROUND DIM
+          // BACKGROUND BLUR
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -65,7 +66,7 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
             ),
           ),
 
-          // DIALOG BOX
+          // DIALOG
           Center(
             child: Container(
               width: 345,
@@ -78,7 +79,6 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // TITLE
                     Text(
                       "Edit Alat",
                       style: GoogleFonts.poppins(
@@ -99,11 +99,12 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
                     _buildDropdownKondisi(),
                     const SizedBox(height: 14),
 
-                    _buildField("Denda Per Hari (Rp)", _dendaController, number: true),
+                    _buildField(
+                        "Denda Per Hari (Rp)", _dendaController,
+                        number: true),
 
                     const SizedBox(height: 40),
 
-                    // BUTTON
                     Row(
                       children: [
                         Expanded(
@@ -133,8 +134,9 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     );
   }
 
-  // INPUT FIELD
-  Widget _buildField(String label, TextEditingController controller, {bool number = false}) {
+  // ================= INPUT FIELD =================
+  Widget _buildField(String label, TextEditingController controller,
+      {bool number = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -155,11 +157,13 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
           ),
           child: TextField(
             controller: controller,
-            keyboardType: number ? TextInputType.number : TextInputType.text,
+            keyboardType:
+                number ? TextInputType.number : TextInputType.text,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             ),
           ),
         ),
@@ -167,7 +171,7 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     );
   }
 
-  // DROPDOWN KONDISI
+  // ================= DROPDOWN KONDISI =================
   Widget _buildDropdownKondisi() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,8 +197,10 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
               value: _kondisi,
               isExpanded: true,
               dropdownColor: const Color(0xFF1F4F6F),
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              style:
+                  GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              icon:
+                  const Icon(Icons.arrow_drop_down, color: Colors.white),
               items: const [
                 DropdownMenuItem(value: 'baik', child: Text('Baik')),
                 DropdownMenuItem(value: 'rusak', child: Text('Rusak')),
@@ -211,7 +217,7 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     );
   }
 
-  // BUTTON
+  // ================= BUTTON =================
   Widget _actionButton(String text, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -234,70 +240,23 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     );
   }
 
+  // ================= UPDATE LOGIC =================
   void _handleUpdate() async {
-    // Validasi
-    if (_namaController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nama alat tidak boleh kosong'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final stock = int.tryParse(_stockController.text);
-    if (stock == null || stock < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stok harus berupa angka positif'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final denda = int.tryParse(_dendaController.text) ?? 0;
-    if (denda < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Denda harus berupa angka positif'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     setState(() => _loading = true);
 
-    try {
-      await SupabaseServices.updateAlat(
-        idAlat: widget.idAlat,
-        namaAlat: _namaController.text.trim(),
-        stokTotal: stock,
-        kondisi: _kondisi,
-        dendaPerHari: denda,
-      );
+    await SupabaseServices.updateAlat(
+      idAlat: widget.idAlat,
+      namaAlat: _namaController.text.trim(),
+      stokTotal: stock,
+      kondisi: _kondisi,
+      dendaPerHari: denda.toDouble(), // 🔥 FIX UTAMA
+    );
 
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_namaController.text} berhasil diupdate'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengupdate alat: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    if (mounted) {
+      Navigator.pop(context, true);
     }
   }
 }

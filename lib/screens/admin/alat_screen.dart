@@ -8,11 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlatScreen extends StatefulWidget {
   final String username;
-  
-  const AlatScreen({
-    super.key,
-    required this.username,
-  });
+
+  const AlatScreen({super.key, required this.username});
 
   @override
   State<AlatScreen> createState() => _AlatScreenState();
@@ -79,18 +76,36 @@ class _AlatScreenState extends State<AlatScreen> {
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
+  // ==========================================
+  // SEARCH KATEGORI (TAMBAHAN)
+  // ==========================================
+  Future<void> _searchKategori(String keyword) async {
+    try {
+      if (keyword.trim().isEmpty) {
+        _loadKategori(); // balik ke data awal
+        return;
+      }
+
+      final data = await SupabaseServices.searchKategori(keyword);
+
+      if (mounted) {
+        setState(() {
+          _kategoriList = data;
+        });
+      }
+    } catch (e) {
+      debugPrint('Search error: $e');
+    }
+  }
+
   IconData _getIconForKategori(String namaKategori) {
     final lowerName = namaKategori.toLowerCase();
-    
 
     if (_iconMap.containsKey(lowerName)) {
       return _iconMap[lowerName]!;
@@ -101,7 +116,7 @@ class _AlatScreenState extends State<AlatScreen> {
         return _iconMap[key]!;
       }
     }
-    
+
     return _iconMap['default']!;
   }
 
@@ -130,7 +145,11 @@ class _AlatScreenState extends State<AlatScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         onPressed: () => Navigator.pop(context),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -153,9 +172,16 @@ class _AlatScreenState extends State<AlatScreen> {
               // --- CONTENT AREA ---
               Expanded(
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF1F4F6F)))
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF1F4F6F),
+                        ),
+                      )
                     : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 25,
+                          vertical: 30,
+                        ),
                         child: Column(
                           children: [
                             // Search Bar Custom
@@ -172,6 +198,7 @@ class _AlatScreenState extends State<AlatScreen> {
                               child: CustomSearchBar(
                                 controller: _searchController,
                                 hintText: 'Cari Alat Disini!',
+                                onChanged: _searchKategori,
                               ),
                             ),
 
@@ -212,18 +239,21 @@ class _AlatScreenState extends State<AlatScreen> {
                               GridView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 20,
-                                  mainAxisSpacing: 20,
-                                  childAspectRatio: 1.0,
-                                ),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 20,
+                                      mainAxisSpacing: 20,
+                                      childAspectRatio: 1.0,
+                                    ),
                                 itemCount: _kategoriList.length,
                                 itemBuilder: (context, index) {
                                   final kategori = _kategoriList[index];
                                   return _buildCategoryCard(
                                     context,
-                                    _getIconForKategori(kategori['nama_kategori']),
+                                    _getIconForKategori(
+                                      kategori['nama_kategori'],
+                                    ),
                                     kategori['nama_kategori'],
                                     kategori['id_kategori'],
                                     () => Navigator.push(
@@ -232,7 +262,8 @@ class _AlatScreenState extends State<AlatScreen> {
                                         builder: (context) => AlatListScreen(
                                           username: widget.username,
                                           idKategori: kategori['id_kategori'],
-                                          namaKategori: kategori['nama_kategori'],
+                                          namaKategori:
+                                              kategori['nama_kategori'],
                                         ),
                                       ),
                                     ),
@@ -256,10 +287,11 @@ class _AlatScreenState extends State<AlatScreen> {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => TambahKategoriDialog(username: widget.username),
+                      builder: (context) =>
+                          TambahKategoriDialog(username: widget.username),
                     ),
                   );
-                  
+
                   if (result == true) {
                     _loadKategori();
                   }
@@ -278,11 +310,7 @@ class _AlatScreenState extends State<AlatScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 45,
-                  ),
+                  child: const Icon(Icons.add, color: Colors.white, size: 45),
                 ),
               ),
             ),
@@ -363,11 +391,7 @@ class _AlatScreenState extends State<AlatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 80,
-              color: const Color(0xFFD9D9D9),
-            ),
+            Icon(icon, size: 80, color: const Color(0xFFD9D9D9)),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),

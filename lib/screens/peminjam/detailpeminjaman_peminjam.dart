@@ -1,23 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 
-// --- DATA MODEL ---
+// =====================
+// DATA MODEL
+// =====================
 class PeminjamanModel {
-  final String id, namaAlat, status, tanggalPinjaman, estimasiPengembalian;
-  final String? dikembalikanPada;
-  final int? denda;
+  final int idPeminjaman;
+  final String namaAlat;
+  final String status;
+  final DateTime tanggalPinjaman;
+  final DateTime estimasiPengembalian;
+  final DateTime? dikembalikanPada;
+  final int denda;
 
   PeminjamanModel({
-    required this.id,
+    required this.idPeminjaman,
     required this.namaAlat,
     required this.status,
     required this.tanggalPinjaman,
     required this.estimasiPengembalian,
     this.dikembalikanPada,
-    this.denda,
+    required this.denda,
   });
 }
 
+// =====================
+// SCREEN
+// =====================
 class PeminjamanPeminjamScreen extends StatefulWidget {
   final String username;
 
@@ -33,105 +45,140 @@ class PeminjamanPeminjamScreen extends StatefulWidget {
 
 class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
   String activeFilter = 'Menunggu';
+  bool isLoading = true;
 
-  final List<PeminjamanModel> allData = [
-    PeminjamanModel(
-      id: '1',
-      namaAlat: 'Palu Baja',
-      status: 'Menunggu',
-      tanggalPinjaman: '1/Jan/26',
-      estimasiPengembalian: '6/Jan/26',
-    ),
-    PeminjamanModel(
-      id: '2',
-      namaAlat: 'Jangka Sorong',
-      status: 'Pengembalian',
-      tanggalPinjaman: '1/Jan/26',
-      estimasiPengembalian: '6/Jan/26',
-      dikembalikanPada: '2/Jan/26',
-      denda: 0,
-    ),
-    PeminjamanModel(
-      id: '3',
-      namaAlat: 'Palu Baja',
-      status: 'Ditolak',
-      tanggalPinjaman: '1/Jan/26',
-      estimasiPengembalian: '6/Jan/26',
-    ),
-    PeminjamanModel(
-      id: '4',
-      namaAlat: 'Jangka Sorong',
-      status: 'Selesai',
-      tanggalPinjaman: '1/Jan/26',
-      estimasiPengembalian: '6/Jan/26',
-    ),
-  ];
+  List<PeminjamanModel> data = [];
+
+  /// MAP FILTER -> STATUS DATABASE
+  /// ACC PETUGAS = status 'dipinjam' -> MASUK PENGEMBALIAN
+  final Map<String, String> statusMap = {
+    'Menunggu': 'menunggu',
+    'Pengembalian': 'dipinjam',
+    'Ditolak': 'ditolak',
+    'Selesai': 'dikembalikan',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => isLoading = true);
+
+    try {
+      final userId =
+          await SupabaseServices.getUserIdByUsername(widget.username);
+
+      final supabase = Supabase.instance.client;
+
+      final List<Map<String, dynamic>> response =
+          await supabase.from('peminjaman').select('''
+            id_peminjaman,
+            status,
+            tanggal_pinjam,
+            estimasi_kembali,
+            detail_peminjaman!inner(
+              alat!inner(nama_alat)
+            ),
+            pengembalian(tanggal_pengembalian, total_denda)
+          ''')
+          .eq('id_user', userId)
+          // INI KUNCI FILTER
+          .eq('status', statusMap[activeFilter]!)
+          .order('tanggal_pinjam', ascending: false);
+
+      data = response.map<PeminjamanModel>((e) {
+        final detailList = e['detail_peminjaman'] as List;
+        final detail = detailList.first;
+        final alat = detail['alat'];
+
+        final pengembalianList = e['pengembalian'] as List;
+        final pengembalian =
+            pengembalianList.isNotEmpty ? pengembalianList.first : null;
+
+        return PeminjamanModel(
+          idPeminjaman: e['id_peminjaman'],
+          namaAlat: alat['nama_alat'],
+          status: e['status'],
+          tanggalPinjaman: DateTime.parse(e['tanggal_pinjam']),
+          estimasiPengembalian: DateTime.parse(e['estimasi_kembali']),
+          dikembalikanPada: pengembalian != null
+              ? DateTime.parse(pengembalian['tanggal_pengembalian'])
+              : null,
+          denda: pengembalian?['total_denda'] ?? 0,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('ERROR PEMINJAMAN: $e');
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  String _fmt(DateTime d) => DateFormat('d/MMM/yy').format(d);
 
   @override
   Widget build(BuildContext context) {
-    List<PeminjamanModel> filteredList = allData
-        .where((item) => item.status == activeFilter)
-        .toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
       body: Column(
         children: [
-          // --- HEADER ---
           _buildHeader(),
-
           const SizedBox(height: 15),
-
-          // --- FILTER BAR ---
-          _buildScrollableFilter(),
-
-          const SizedBox(height: 10),
-
+          _buildFilter(),
           if (activeFilter == 'Pengembalian') _buildInfoDenda(),
-
-          // --- LIST CONTENT ---
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-              itemCount: filteredList.length,
-              itemBuilder: (context, index) => _buildLoanCard(filteredList[index]),
-            ),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 25, vertical: 10),
+                    itemCount: data.length,
+                    itemBuilder: (context, index) =>
+                        _buildLoanCard(data[index]),
+                  ),
           ),
         ],
       ),
     );
   }
 
+  // =====================
+  // HEADER
+  // =====================
   Widget _buildHeader() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
+      padding: const EdgeInsets.fromLTRB(20, 45, 20, 25),
       decoration: const BoxDecoration(
         color: Color(0xFF769DCB),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Peminjaman',
-            style: GoogleFonts.poppins(
-              fontSize: 32,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const Icon(Icons.arrow_back_ios_new,
+                color: Colors.white),
           ),
-          const Icon(Icons.person, color: Colors.white, size: 35),
+          const SizedBox(width: 10),
+          Text('Peminjaman',
+              style: GoogleFonts.poppins(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white)),
         ],
       ),
     );
   }
 
-  Widget _buildScrollableFilter() {
-    List<String> filters = ['Menunggu', 'Pengembalian', 'Ditolak', 'Selesai'];
+  // =====================
+  // FILTER
+  // =====================
+  Widget _buildFilter() {
+    final filters = ['Menunggu', 'Pengembalian', 'Ditolak', 'Selesai'];
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 25),
       height: 45,
@@ -141,23 +188,28 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: filters.map((filter) {
-          bool isSelected = activeFilter == filter;
+        children: filters.map((f) {
+          final isActive = activeFilter == f;
           return GestureDetector(
-            onTap: () => setState(() => activeFilter = filter),
+            onTap: () {
+              setState(() => activeFilter = f);
+              _loadData();
+            },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
+                color:
+                    isActive ? const Color(0xFF769DCB) : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                filter,
+                f,
                 style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight:
+                        isActive ? FontWeight.w600 : FontWeight.normal),
               ),
             ),
           );
@@ -166,162 +218,95 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
     );
   }
 
-  Widget _buildLoanCard(PeminjamanModel data) {
+  // =====================
+  // CARD
+  // =====================
+  Widget _buildLoanCard(PeminjamanModel d) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.namaAlat,
-                  style: GoogleFonts.poppins(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(d.namaAlat,
+                style: GoogleFonts.poppins(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                _buildStatusBadge(data),
-                const SizedBox(height: 12),
-                _buildTextRow('Tanggal Peminjaman', ': ${data.tanggalPinjaman}'),
-                _buildTextRow('Estimasi Pengembalian', ': ${data.estimasiPengembalian}'),
-                if (data.dikembalikanPada != null)
-                  _buildTextRow('Dikembalikan Pada', ': ${data.dikembalikanPada}'),
-              ],
-            ),
-          ),
-
-          // --- MODIFIKASI: INNER CONTAINER & BUTTON KEMBALIKAN ---
-          if (activeFilter == 'Pengembalian')
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-              decoration: const BoxDecoration(
-                color: Color(0xFF769DCB),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(25),
-                  bottomRight: Radius.circular(25),
-                ),
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8DC33E),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    'Kembalikan',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
+                    color: Colors.white)),
+            const SizedBox(height: 6),
+            _buildStatusBadge(d),
+            const SizedBox(height: 12),
+            _buildRow('Tanggal Peminjaman', _fmt(d.tanggalPinjaman)),
+            _buildRow(
+                'Estimasi Pengembalian', _fmt(d.estimasiPengembalian)),
+            if (d.dikembalikanPada != null)
+              _buildRow(
+                  'Dikembalikan Pada', _fmt(d.dikembalikanPada!)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatusBadge(PeminjamanModel data) {
-    if (data.status == 'Pengembalian') {
+  Widget _buildStatusBadge(PeminjamanModel d) {
+    if (activeFilter == 'Pengembalian') {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFE52510),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          'Denda: ${data.denda}',
-          style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-        ),
+            color: const Color(0xFFE52510),
+            borderRadius: BorderRadius.circular(8)),
+        child: Text('Denda: ${d.denda}',
+            style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold)),
       );
     }
-    
-    String text = data.status == 'Selesai' ? 'Dikembalikan' : data.status;
-    Color color = data.status == 'Ditolak' ? const Color(0xFFE52510) : const Color(0xFF769DCB);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
+          color: const Color(0xFF769DCB),
+          borderRadius: BorderRadius.circular(8)),
       child: Text(
-        text,
+        activeFilter == 'Selesai' ? 'Dikembalikan' : activeFilter,
         style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
       ),
     );
   }
 
-  Widget _buildTextRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500),
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
-          ),
-        ],
-      ),
+  Widget _buildRow(String label, String value) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 130,
+          child: Text(label,
+              style: GoogleFonts.poppins(
+                  color: Colors.white, fontSize: 10)),
+        ),
+        Text(': $value',
+            style: GoogleFonts.poppins(
+                color: Colors.white, fontSize: 10)),
+      ],
     );
   }
 
   Widget _buildInfoDenda() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 25, vertical: 5),
+      margin: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFE52510),
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Informasi Pengembalian',
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Setiap keterlambatan pengembalian maka dikenakan denda sebesar 5000/Hari',
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 9),
-                ),
-              ],
-            ),
-          ),
-        ],
+      child: Text(
+        'Setiap keterlambatan dikenakan denda 5000 / hari',
+        style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
       ),
     );
   }
