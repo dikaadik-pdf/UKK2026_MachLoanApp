@@ -80,102 +80,89 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: Stack(
-        children: [
-          // EFEK BLUR LATAR BELAKANG
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                color: Colors.black.withOpacity(0.3),
-              ),
-            ),
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: 345,
+          padding: const EdgeInsets.symmetric(vertical: 30),
+          decoration: BoxDecoration(
+            color: const Color(0xFF769DCB),
+            borderRadius: BorderRadius.circular(30),
           ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Tambah Kategori",
+                  style: GoogleFonts.poppins(
+                    fontSize: 25,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: Text(
+                    "Kategori baru akan otomatis mendapat ikon default. Anda bisa menggunakan icon yang sesuai dengan kategori.",
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: Colors.white70,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 30),
 
-          // KONTEN DIALOG
-          Center(
-            child: Container(
-              width: 345,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: BoxDecoration(
-                color: const Color(0xFF769DCB),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                _label("Nama Kategori"),
+                _inputField(_namaController, hint: "Contoh: Alat Mesin"),
+
+                const SizedBox(height: 20),
+                _label("Kode Prefix (4 karakter)"),
+                _inputField(
+                  _prefixController,
+                  hint: "Contoh: TMAT",
+                  uppercase: true,
+                ),
+
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: Text(
+                    "Prefix digunakan untuk kode alat otomatis.\nContoh: TMAT001, TMAT002, dst.",
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: Colors.white60,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                // TOMBOL AKSI
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "Tambah Kategori",
-                      style: GoogleFonts.poppins(
-                        fontSize: 25,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 30),
-                      child: Text(
-                        "Kategori baru akan otomatis mendapat ikon default. Anda bisa menggunakan icon yang sesuai dengan kategori.",
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: Colors.white70,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-
-                    _label("Nama Kategori"),
-                    _inputField(_namaController, hint: "Contoh: Alat Mesin"),
-
-                    const SizedBox(height: 20),
-                    _label("Kode Prefix (4 karakter)"),
-                    _inputField(
-                      _prefixController,
-                      hint: "Contoh: TMAT",
-                      uppercase: true,
-                    ),
-
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 30),
-                      child: Text(
-                        "Prefix digunakan untuk kode alat otomatis.\nContoh: TMAT001, TMAT002, dst.",
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          color: Colors.white60,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // TOMBOL AKSI
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _actionButton("Kembali", const Color(0xFF7E7E7E), () {
-                          Navigator.pop(context);
-                        }),
-                        const SizedBox(width: 20),
-                        _actionButton(
-                          _loading ? "..." : "Simpan",
-                          const Color(0xFF2C3E50),
-                          _loading ? () {} : _handleSave,
-                        ),
-                      ],
+                    _actionButton("Kembali", const Color(0xFF7E7E7E), () {
+                      Navigator.pop(context);
+                    }),
+                    const SizedBox(width: 20),
+                    _actionButton(
+                      _loading ? "..." : "Simpan",
+                      const Color(0xFF2C3E50),
+                      _loading ? () {} : _handleSave,
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -239,7 +226,7 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Beneran?',
-        subtitle: 'Apakah Kamu Yakin Menambah Kategori Ini"?',
+        subtitle: 'Apakah Kamu Yakin Menambah Kategori Ini?',
         onBack: () => Navigator.pop(context, false),
         onContinue: () => Navigator.pop(context, true),
       ),
@@ -260,8 +247,8 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
         await showDialog(
           context: context,
           builder: (context) => SuccessDialog(
-            title: 'Berhasil!',
-            subtitle: 'Kategori berhasil ditambahkan',
+            title: 'Yeay...!',
+            subtitle: 'Kategori yang Kamu Mau Berhasil Ditambahkan',
             onOk: () => Navigator.pop(context),
           ),
         );

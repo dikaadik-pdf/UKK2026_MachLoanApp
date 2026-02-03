@@ -153,7 +153,7 @@ class _LoanCardScreenState extends State<LoanCardScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Image.asset('assets/images/mechloan.png'),
+                    child: Image.asset('assets/images/machloanputih.png'),
                   ),
                   const SizedBox(width: 12),
                   Text(

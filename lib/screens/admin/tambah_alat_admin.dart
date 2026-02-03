@@ -24,7 +24,7 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
   final TextEditingController _stockController = TextEditingController();
   final TextEditingController _dendaController = TextEditingController(text: '0');
   String _kondisi = 'baik';
-  bool _loading = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -34,191 +34,16 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     super.dispose();
   }
 
-  Widget _label(String text) {
-    return Container(
-      width: 300,
-      padding: const EdgeInsets.only(left: 10, bottom: 5),
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _inputField(TextEditingController controller, {bool number = false, String hint = ""}) {
-    return Container(
-      width: 300,
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: number ? TextInputType.number : TextInputType.text,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        ),
-      ),
-    );
-  }
-
-  Widget _dropdownKondisi() {
-    return Container(
-      width: 300,
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _kondisi,
-          isExpanded: true,
-          dropdownColor: const Color(0xFF1F4F6F),
-          style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-          items: const [
-            DropdownMenuItem(value: 'baik', child: Text('Baik')),
-            DropdownMenuItem(value: 'rusak', child: Text('Rusak')),
-          ],
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _kondisi = value);
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(color: Colors.black.withOpacity(0.3)),
-            ),
-          ),
-          Center(
-            child: Container(
-              width: 345,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: BoxDecoration(
-                color: const Color(0xFF769DCB),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "Tambah Alat",
-                      style: GoogleFonts.poppins(
-                        fontSize: 25,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-
-                    _label("Nama Alat"),
-                    _inputField(_namaController),
-
-                    const SizedBox(height: 20),
-                    _label("Stok Total"),
-                    _inputField(_stockController, number: true),
-
-                    const SizedBox(height: 20),
-                    _label("Kondisi"),
-                    _dropdownKondisi(),
-
-                    const SizedBox(height: 20),
-                    _label("Denda Per Hari (Rp)"),
-                    _inputField(_dendaController, number: true),
-
-                    const SizedBox(height: 40),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _actionButton("Kembali", const Color(0xFF7E7E7E), () {
-                          Navigator.pop(context);
-                        }),
-                        const SizedBox(width: 20),
-                        _actionButton(
-                          _loading ? "..." : "Simpan",
-                          const Color(0xFF2C3E50),
-                          _loading ? () {} : _handleSave,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionButton(String title, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 120,
-        height: 45,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          title,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _handleSave() async {
+  Future<void> _handleSave() async {
     // Validasi
     if (_namaController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nama alat tidak boleh kosong'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackbar('Nama alat tidak boleh kosong', isError: true);
       return;
     }
 
     final stock = int.tryParse(_stockController.text);
     if (stock == null || stock <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stok harus diisi dengan angka yang valid'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackbar('Stok harus diisi dengan angka yang valid', isError: true);
       return;
     }
 
@@ -235,7 +60,7 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
 
     if (confirmed != true) return;
 
-    setState(() => _loading = true);
+    setState(() => _isLoading = true);
 
     try {
       final denda = int.tryParse(_dendaController.text) ?? 0;
@@ -266,14 +91,227 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menambah alat: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _isLoading = false);
+        _showSnackbar('Gagal menambah alat: $e', isError: true);
       }
     }
+  }
+
+  void _showSnackbar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: 345,
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF769DCB),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+              Text(
+                "Tambah Alat",
+                style: GoogleFonts.poppins(
+                  fontSize: 27,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Input Nama Alat
+              _buildField("Nama Alat", _namaController, hint: "Contoh: Gergaji Listrik"),
+              const SizedBox(height: 14),
+
+              // Input Stok Total
+              _buildField(
+                "Stok Total",
+                _stockController,
+                keyboardType: TextInputType.number,
+                hint: "Contoh: 10",
+              ),
+              const SizedBox(height: 14),
+
+              // Dropdown Kondisi
+              _buildKondisiDropdown(),
+              const SizedBox(height: 14),
+
+              // Input Denda Per Hari
+              _buildField(
+                "Denda Per Hari (Rp)",
+                _dendaController,
+                keyboardType: TextInputType.number,
+                hint: "Contoh: 5000",
+              ),
+
+              const SizedBox(height: 30),
+
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: _actionButton(
+                      "Kembali",
+                      const Color(0xFF6B7280),
+                      _isLoading ? null : () => Navigator.pop(context),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _actionButton(
+                      "Simpan",
+                      const Color(0xFF2F3A40),
+                      _isLoading ? null : _handleSave,
+                      isLoading: _isLoading,
+                    ),
+                  ),
+                ],
+              ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    String hint = "",
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 46,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F4F6F),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: Colors.white.withOpacity(0.3),
+                fontSize: 14,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKondisiDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Kondisi",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F4F6F),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _kondisi,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1F4F6F),
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              items: const [
+                DropdownMenuItem(value: 'baik', child: Text('Baik')),
+                DropdownMenuItem(value: 'rusak', child: Text('Rusak')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _kondisi = value);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actionButton(
+    String text,
+    Color color,
+    VoidCallback? onTap, {
+    bool isLoading = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: onTap == null ? color.withOpacity(0.5) : color,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        alignment: Alignment.center,
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                text,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+      ),
+    );
   }
 }

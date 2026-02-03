@@ -11,6 +11,8 @@ import 'package:ukk2026_machloanapp/screens/peminjam/kartu_peminjaman.dart';
 class PeminjamanModel {
   final int idPeminjaman;
   final String namaAlat;
+  final int idAlat;
+  final int jumlah;
   final String status;
   final DateTime tanggalPinjaman;
   final DateTime estimasiPengembalian;
@@ -19,6 +21,8 @@ class PeminjamanModel {
   PeminjamanModel({
     required this.idPeminjaman,
     required this.namaAlat,
+    required this.idAlat,
+    required this.jumlah,
     required this.status,
     required this.tanggalPinjaman,
     required this.estimasiPengembalian,
@@ -77,7 +81,8 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
             tanggal_pinjam,
             estimasi_kembali,
             detail_peminjaman!inner(
-              alat!inner(nama_alat)
+              jumlah,
+              alat!inner(nama_alat, id_alat)
             ),
             pengembalian(tanggal_pengembalian, total_denda)
           ''')
@@ -97,6 +102,8 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
         return PeminjamanModel(
           idPeminjaman: e['id_peminjaman'],
           namaAlat: alat['nama_alat'],
+          idAlat: alat['id_alat'],
+          jumlah: detail['jumlah'],
           status: e['status'],
           tanggalPinjaman: DateTime.parse(e['tanggal_pinjam']),
           estimasiPengembalian: DateTime.parse(e['estimasi_kembali']),
@@ -110,9 +117,6 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
     setState(() => isLoading = false);
   }
 
-  // =====================
-  // HANDLE KEMBALIKAN
-  // =====================
   Future<void> _handleKembalikan(PeminjamanModel d) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -144,7 +148,6 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
     if (confirm != true) return;
 
     try {
-      final supabase = Supabase.instance.client;
       final now = DateTime.now();
 
       // Hitung denda
@@ -155,22 +158,14 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
         totalDenda = daysLate * 5000;
       }
 
-      // ✅ Format tanggal jadi DATE string (YYYY-MM-DD)
-      final tanggalStr = now.toIso8601String().split('T')[0];
-
-      // Insert ke tabel pengembalian
-      await supabase.from('pengembalian').insert({
-        'id_peminjaman': d.idPeminjaman,
-        'tanggal_pengembalian': tanggalStr,
-        'terlambat': daysLate,
-        'total_denda': totalDenda,
-      });
-
-      // Update status peminjaman menjadi 'dikembalikan'
-      await supabase
-          .from('peminjaman')
-          .update({'status': 'dikembalikan'})
-          .eq('id_peminjaman', d.idPeminjaman);
+      await SupabaseServices.kembalikanAlat(
+        idPeminjaman: d.idPeminjaman,
+        idAlat: d.idAlat,
+        jumlah: d.jumlah,
+        tanggalPengembalian: now,
+        terlambat: daysLate,
+        totalDenda: totalDenda,
+      );
 
       // Reload data
       await _loadData();
@@ -180,7 +175,7 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Peminjaman berhasil dikembalikan!',
+            'Peminjaman berhasil dikembalikan! Stok alat telah dikembalikan.',
             style: GoogleFonts.poppins(),
           ),
           backgroundColor: Colors.green,

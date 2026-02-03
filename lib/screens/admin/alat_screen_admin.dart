@@ -277,6 +277,7 @@ class _AlatScreenState extends State<AlatScreen> {
             ],
           ),
 
+          // TOMBOL + (YANG DIUBAH)
           Positioned(
             bottom: 40,
             left: 0,
@@ -284,12 +285,12 @@ class _AlatScreenState extends State<AlatScreen> {
             child: Center(
               child: GestureDetector(
                 onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          TambahKategoriDialog(username: widget.username),
-                    ),
+                  final result = await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    barrierColor: Colors.black.withOpacity(0.4),
+                    builder: (context) =>
+                        TambahKategoriDialog(username: widget.username),
                   );
 
                   if (result == true) {

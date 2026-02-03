@@ -51,5 +51,6 @@ flutter:
 
   assets:
     - assets/images/mechloan.png
+    - assets/images/machloanputih.png
     - assets/images/mesinkiri.png
     - assets/images/mesinkanan.png

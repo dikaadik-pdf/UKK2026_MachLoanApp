@@ -90,6 +90,61 @@ class SupabaseServices {
   }
 
   // ==========================================
+  // DASHBOARD REALTIME SUBSCRIPTIONS
+  // ==========================================
+
+  /// Subscribe ke perubahan tabel 'alat' → update stat cards secara realtime
+  static RealtimeChannel subscribeToDashboardAlat(
+    Function(Map<String, dynamic>) onData,
+  ) {
+    final channel = _client.channel('dashboard_alat_realtime');
+
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'alat',
+          callback: (payload) async {
+            final data = await getDashboardStats();
+            onData(data);
+          },
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  /// Subscribe ke perubahan tabel 'peminjaman' dan 'detail_peminjaman' → update chart realtime
+  static RealtimeChannel subscribeToDashboardPeminjaman(
+    Function(List<Map<String, dynamic>>) onData,
+  ) {
+    final channel = _client.channel('dashboard_peminjaman_realtime');
+
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'peminjaman',
+          callback: (payload) async {
+            final data = await getWeeklyPeminjamanStats();
+            onData(data);
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'detail_peminjaman',
+          callback: (payload) async {
+            final data = await getWeeklyPeminjamanStats();
+            onData(data);
+          },
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  // ==========================================
   // KATEGORI SERVICES
   // ==========================================
 
@@ -249,10 +304,30 @@ class SupabaseServices {
 
       if (namaAlat != null) updateData['nama_alat'] = namaAlat;
       if (idKategori != null) updateData['id_kategori'] = idKategori;
-      if (stokTotal != null) updateData['stok_total'] = stokTotal;
       if (dendaPerHari != null) updateData['denda_per_hari'] = dendaPerHari;
       if (deskripsi != null) updateData['deskripsi'] = deskripsi;
       if (kondisi != null) updateData['kondisi'] = kondisi;
+
+      if (stokTotal != null) {
+        final currentAlat = await _client
+            .from('alat')
+            .select('stok_total, stok_tersedia')
+            .eq('id_alat', idAlat)
+            .single();
+
+        final int currentTotal = currentAlat['stok_total'];
+        final int currentTersedia = currentAlat['stok_tersedia'];
+        
+        final int selisih = stokTotal - currentTotal;
+        final int newTersedia = currentTersedia + selisih;
+
+        if (newTersedia < 0) {
+          throw Exception('Stok tidak bisa dikurangi karena ada ${currentTotal - currentTersedia} alat yang sedang dipinjam');
+        }
+
+        updateData['stok_total'] = stokTotal;
+        updateData['stok_tersedia'] = newTersedia;
+      }
 
       if (updateData.isEmpty) {
         throw Exception('Tidak ada data yang diupdate');
@@ -357,7 +432,7 @@ class SupabaseServices {
             users!inner(username),
             detail_peminjaman!inner(
               jumlah,
-              alat!inner(nama_alat, denda_per_hari)
+              alat!inner(nama_alat, denda_per_hari, id_alat)
             ),
             pengembalian(tanggal_pengembalian, total_denda)
           ''')
@@ -418,6 +493,36 @@ class SupabaseServices {
       });
     } catch (e) {
       throw Exception('Gagal update status: $e');
+    }
+  }
+
+  static Future<void> kembalikanAlat({
+    required int idPeminjaman,
+    required int idAlat,
+    required int jumlah,
+    required DateTime tanggalPengembalian,
+    required int terlambat,
+    required int totalDenda,
+  }) async {
+    try {
+      await _client.from('pengembalian').insert({
+        'id_peminjaman': idPeminjaman,
+        'tanggal_pengembalian': tanggalPengembalian.toIso8601String().split('T')[0],
+        'terlambat': terlambat,
+        'total_denda': totalDenda,
+      });
+
+      await _client
+          .from('peminjaman')
+          .update({'status': 'dikembalikan'})
+          .eq('id_peminjaman', idPeminjaman);
+
+      await _client.rpc(
+        'tambah_stok_tersedia',
+        params: {'p_id_alat': idAlat, 'p_jumlah': jumlah},
+      );
+    } catch (e) {
+      throw Exception('Gagal mengembalikan alat: $e');
     }
   }
 

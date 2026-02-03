@@ -440,21 +440,20 @@ class _AlatListScreenState extends State<AlatListScreen> {
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
+                                            // TOMBOL EDIT - DIUBAH JADI SHOWDIALOG
                                             GestureDetector(
                                               onTap: () async {
-                                                final result = await Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) => EditAlatDialog(
-                                                      username: widget.username,
-                                                      idAlat: alat['id_alat'],
-                                                      namaAlat:
-                                                          alat['nama_alat'],
-                                                      stock: alat['stok_total'],
-                                                      kondisi: alat['kondisi'],
-                                                      dendaPerHari:
-                                                          alat['denda_per_hari'],
-                                                    ),
+                                                final result = await showDialog(
+                                                  context: context,
+                                                  barrierDismissible: false,
+                                                  barrierColor: Colors.black.withOpacity(0.4),
+                                                  builder: (context) => EditAlatDialog(
+                                                    username: widget.username,
+                                                    idAlat: alat['id_alat'],
+                                                    namaAlat: alat['nama_alat'],
+                                                    stock: alat['stok_total'],
+                                                    kondisi: alat['kondisi'],
+                                                    dendaPerHari: alat['denda_per_hari'],
                                                   ),
                                                 );
                                                 if (result == true) {
@@ -500,7 +499,7 @@ class _AlatListScreenState extends State<AlatListScreen> {
             ],
           ),
 
-          // ===== FLOATING BUTTON =====
+          // ===== FLOATING BUTTON - DIUBAH JADI SHOWDIALOG =====
           Positioned(
             bottom: 40,
             left: 0,
@@ -508,13 +507,13 @@ class _AlatListScreenState extends State<AlatListScreen> {
             child: Center(
               child: GestureDetector(
                 onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TambahAlatDialog(
-                        username: widget.username,
-                        idKategori: widget.idKategori,
-                      ),
+                  final result = await showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    barrierColor: Colors.black.withOpacity(0.4),
+                    builder: (context) => TambahAlatDialog(
+                      username: widget.username,
+                      idKategori: widget.idKategori,
                     ),
                   );
 

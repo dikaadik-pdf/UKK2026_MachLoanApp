@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk2026_machloanapp/screens/admin/alat_screen_admin.dart';
 import 'package:ukk2026_machloanapp/screens/admin/peminjaman_admin.dart';
 import 'package:ukk2026_machloanapp/screens/admin/logaktivitas_admin.dart';
@@ -25,37 +26,77 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
   List<Map<String, dynamic>> weeklyData = [];
   bool isLoading = true;
 
+  // ✅ Realtime channel references
+  RealtimeChannel? _alatChannel;
+  RealtimeChannel? _peminjamanChannel;
+
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    _subscribeRealtime();
   }
 
+  @override
+  void dispose() {
+    // ✅ Unsubscribe semua channel saat widget di-dispose
+    if (_alatChannel != null) {
+      SupabaseServices.unsubscribeChannel(_alatChannel!);
+    }
+    if (_peminjamanChannel != null) {
+      SupabaseServices.unsubscribeChannel(_peminjamanChannel!);
+    }
+    super.dispose();
+  }
+
+  // ===== INITIAL FETCH =====
   Future<void> _loadDashboardData() async {
     setState(() => isLoading = true);
 
     try {
-      // Ambil data statistik alat
       final statsData = await SupabaseServices.getDashboardStats();
-      
-      // Ambil data grafik peminjaman mingguan
       final chartData = await SupabaseServices.getWeeklyPeminjamanStats();
 
-      setState(() {
-        totalAlat = statsData['total_alat'] ?? 0;
-        alatTersedia = statsData['alat_tersedia'] ?? 0;
-        alatDipinjam = statsData['alat_dipinjam'] ?? 0;
-        weeklyData = chartData;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
       if (mounted) {
+        setState(() {
+          totalAlat = statsData['total_alat'] ?? 0;
+          alatTersedia = statsData['alat_tersedia'] ?? 0;
+          alatDipinjam = statsData['alat_dipinjam'] ?? 0;
+          weeklyData = chartData;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Gagal memuat data dashboard: $e')),
         );
       }
     }
+  }
+
+  // ===== REALTIME SUBSCRIPTION =====
+  void _subscribeRealtime() {
+    // ✅ Listen perubahan tabel 'alat' → update stat cards
+    _alatChannel = SupabaseServices.subscribeToDashboardAlat((statsData) {
+      if (mounted) {
+        setState(() {
+          totalAlat = statsData['total_alat'] ?? 0;
+          alatTersedia = statsData['alat_tersedia'] ?? 0;
+          alatDipinjam = statsData['alat_dipinjam'] ?? 0;
+        });
+      }
+    });
+
+    // ✅ Listen perubahan tabel 'peminjaman' & 'detail_peminjaman' → update chart
+    _peminjamanChannel = SupabaseServices.subscribeToDashboardPeminjaman((chartData) {
+      if (mounted) {
+        setState(() {
+          weeklyData = chartData;
+        });
+      }
+    });
   }
 
   @override

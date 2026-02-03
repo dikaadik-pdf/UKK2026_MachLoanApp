@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk2026_machloanapp/screens/logoutpage.dart';
 import 'package:ukk2026_machloanapp/screens/petugas/alatscreen_petugas.dart';
 import 'package:ukk2026_machloanapp/screens/petugas/laporanpetugas.dart';
 import 'package:ukk2026_machloanapp/screens/petugas/peminjamanpetugas.dart';
+import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 
 class DashboardScreenPetugas extends StatefulWidget {
   final String username;
@@ -16,16 +18,85 @@ class DashboardScreenPetugas extends StatefulWidget {
 }
 
 class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
-  final List<double> weeklyData = [30, 12, 10, 20, 85, 40, 50];
-  final List<String> weekDays = [
-    'Sen',
-    'Sel',
-    'Rab',
-    'Kam',
-    'Jum',
-    'Sab',
-    'Min',
-  ];
+  // ✅ Data dari database (bukan hardcoded)
+  int totalAlat = 0;
+  int alatTersedia = 0;
+  int alatDipinjam = 0;
+  List<Map<String, dynamic>> weeklyData = [];
+  bool isLoading = true;
+
+  // ✅ Realtime channel references
+  RealtimeChannel? _alatChannel;
+  RealtimeChannel? _peminjamanChannel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+    _subscribeRealtime();
+  }
+
+  @override
+  void dispose() {
+    // ✅ Unsubscribe semua channel saat widget di-dispose
+    if (_alatChannel != null) {
+      SupabaseServices.unsubscribeChannel(_alatChannel!);
+    }
+    if (_peminjamanChannel != null) {
+      SupabaseServices.unsubscribeChannel(_peminjamanChannel!);
+    }
+    super.dispose();
+  }
+
+  // ===== INITIAL FETCH =====
+  Future<void> _loadDashboardData() async {
+    setState(() => isLoading = true);
+
+    try {
+      final statsData = await SupabaseServices.getDashboardStats();
+      final chartData = await SupabaseServices.getWeeklyPeminjamanStats();
+
+      if (mounted) {
+        setState(() {
+          totalAlat = statsData['total_alat'] ?? 0;
+          alatTersedia = statsData['alat_tersedia'] ?? 0;
+          alatDipinjam = statsData['alat_dipinjam'] ?? 0;
+          weeklyData = chartData;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data dashboard: $e')),
+        );
+      }
+    }
+  }
+
+  // ===== REALTIME SUBSCRIPTION =====
+  void _subscribeRealtime() {
+    // ✅ Listen perubahan tabel 'alat' → update stat cards
+    _alatChannel = SupabaseServices.subscribeToDashboardAlat((statsData) {
+      if (mounted) {
+        setState(() {
+          totalAlat = statsData['total_alat'] ?? 0;
+          alatTersedia = statsData['alat_tersedia'] ?? 0;
+          alatDipinjam = statsData['alat_dipinjam'] ?? 0;
+        });
+      }
+    });
+
+    // ✅ Listen perubahan tabel 'peminjaman' & 'detail_peminjaman' → update chart
+    _peminjamanChannel = SupabaseServices.subscribeToDashboardPeminjaman((chartData) {
+      if (mounted) {
+        setState(() {
+          weeklyData = chartData;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,27 +160,32 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
 
             // ===== CONTENT =====
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    // STAT CARDS
-                    Row(
-                      children: [
-                        _buildStatCard('Total\nAlat', '20'),
-                        const SizedBox(width: 12),
-                        _buildStatCard('Alat\nTersedia', '15'),
-                        const SizedBox(width: 12),
-                        _buildStatCard('Dipinjam', '5'),
-                      ],
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: _loadDashboardData,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                _buildStatCard('Total\nAlat', '$totalAlat'),
+                                const SizedBox(width: 12),
+                                _buildStatCard('Alat\nTersedia', '$alatTersedia'),
+                                const SizedBox(width: 12),
+                                _buildStatCard('Dipinjam', '$alatDipinjam'),
+                              ],
+                            ),
+
+                            const SizedBox(height: 25),
+
+                            _buildChartSection(),
+                          ],
+                        ),
+                      ),
                     ),
-
-                    const SizedBox(height: 25),
-
-                    _buildChartSection(),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -190,7 +266,7 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Grafik Peminjaman',
+              'Grafik Peminjaman (7 Hari Terakhir)',
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -202,24 +278,34 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
           const SizedBox(height: 18),
 
           Expanded(
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: 100,
-                barTouchData: BarTouchData(enabled: true),
-                titlesData: _buildChartTitles(),
-                gridData: _buildChartGrid(),
-                borderData: FlBorderData(show: false),
-                barGroups: _buildBarGroups(),
-              ),
-            ),
+            child: weeklyData.isEmpty
+                ? Center(
+                    child: Text(
+                      'Belum ada data peminjaman',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )
+                : BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: _getMaxY(),
+                      barTouchData: BarTouchData(enabled: true),
+                      titlesData: _buildChartTitles(),
+                      gridData: _buildChartGrid(),
+                      borderData: FlBorderData(show: false),
+                      barGroups: _buildBarGroups(),
+                    ),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  // ===== SIDEBAR (UPDATED) =====
+  // ===== SIDEBAR =====
   Widget _buildSidebar(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.transparent,
@@ -260,7 +346,6 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Column(
                   children: [
-                    // Avatar
                     Container(
                       width: 80,
                       height: 80,
@@ -277,7 +362,6 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
                     
                     const SizedBox(height: 12),
                     
-                    // Username/Email
                     Text(
                       widget.username,
                       style: GoogleFonts.poppins(
@@ -290,7 +374,6 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
                     
                     const SizedBox(height: 4),
                     
-                    // Role Badge
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
@@ -389,44 +472,59 @@ class _DashboardScreenPetugasState extends State<DashboardScreenPetugas> {
   }
 
   // ===== CHART HELPERS =====
-  List<BarChartGroupData> _buildBarGroups() => List.generate(
-        weeklyData.length,
-        (i) => BarChartGroupData(
-          x: i,
-          barRods: [
-            BarChartRodData(
-              toY: weeklyData[i],
-              color: const Color(0xFF769DCB),
-              width: 16,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
-        ),
-      );
+  double _getMaxY() {
+    if (weeklyData.isEmpty) return 100;
+    final maxValue = weeklyData
+        .map((e) => (e['total'] as num).toDouble())
+        .reduce((a, b) => a > b ? a : b);
+    return maxValue > 0 ? maxValue + 10 : 100;
+  }
 
-  FlTitlesData _buildChartTitles() => FlTitlesData(
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (v, _) => Text(
-              weekDays[v.toInt()],
+  List<BarChartGroupData> _buildBarGroups() {
+    return List.generate(
+      weeklyData.length,
+      (i) => BarChartGroupData(
+        x: i,
+        barRods: [
+          BarChartRodData(
+            toY: (weeklyData[i]['total'] as num).toDouble(),
+            color: const Color(0xFF769DCB),
+            width: 16,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  FlTitlesData _buildChartTitles() {
+    return FlTitlesData(
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (v, _) {
+            if (v.toInt() >= weeklyData.length) return const Text('');
+            return Text(
+              weeklyData[v.toInt()]['day_label'] ?? '',
               style: const TextStyle(color: Colors.white70, fontSize: 10),
-            ),
+            );
+          },
+        ),
+      ),
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 30,
+          getTitlesWidget: (v, _) => Text(
+            '${v.toInt()}',
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
           ),
         ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 30,
-            getTitlesWidget: (v, _) => Text(
-              '${v.toInt()}',
-              style: const TextStyle(color: Colors.white70, fontSize: 10),
-            ),
-          ),
-        ),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      );
+      ),
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    );
+  }
 
   FlGridData _buildChartGrid() => FlGridData(
         show: true,

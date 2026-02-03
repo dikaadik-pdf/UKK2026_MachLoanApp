@@ -41,6 +41,16 @@ class _LaporanPageState extends State<LaporanPage> {
     }
   }
 
+  /// Parse tanggal dari string — handles both DATE (yyyy-MM-dd) dan TIMESTAMP (yyyy-MM-ddTHH:mm:ss)
+  DateTime? _parseDate(String? dateStr) {
+    if (dateStr == null) return null;
+    try {
+      return DateTime.parse(dateStr);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _loadLaporan() async {
     setState(() => isLoading = true);
 
@@ -48,7 +58,6 @@ class _LaporanPageState extends State<LaporanPage> {
       DateTime? startDate;
       DateTime? endDate = DateTime.now();
 
-      // Tentukan range tanggal berdasarkan filter
       switch (selectedFilter) {
         case 'Hari Ini':
           startDate = DateTime.now();
@@ -65,7 +74,6 @@ class _LaporanPageState extends State<LaporanPage> {
           endDate = null;
       }
 
-      // Load data dari database
       final data = await SupabaseServices.getLaporanPeminjaman(
         startDate: startDate,
         endDate: endDate,
@@ -77,6 +85,16 @@ class _LaporanPageState extends State<LaporanPage> {
       );
 
       if (!mounted) return;
+
+      // ✅ Sort di sini — tanggal_pinjam terbaru di atas (descending)
+      data.sort((a, b) {
+        final dateA = _parseDate(a['tanggal_pinjam']);
+        final dateB = _parseDate(b['tanggal_pinjam']);
+        if (dateA == null && dateB == null) return 0;
+        if (dateA == null) return 1;   // null taruh di bawah
+        if (dateB == null) return -1;
+        return dateB.compareTo(dateA); // descending = terbaru di atas
+      });
 
       setState(() {
         laporanData = data;
@@ -100,12 +118,10 @@ class _LaporanPageState extends State<LaporanPage> {
 
   Future<void> _printLaporan() async {
     try {
-      // Pastikan locale sudah diinisialisasi
       await _initializeLocale();
 
       final pdf = pw.Document();
 
-      // Format tanggal untuk header
       final now = DateTime.now();
       final dateFormat = DateFormat('dd MMMM yyyy', 'id_ID');
       final filterText = _getFilterText();
@@ -179,7 +195,6 @@ class _LaporanPageState extends State<LaporanPage> {
 
             pw.SizedBox(height: 20),
 
-            // Table Header
             pw.Text(
               'Detail Peminjaman',
               style: pw.TextStyle(
@@ -189,7 +204,7 @@ class _LaporanPageState extends State<LaporanPage> {
             ),
             pw.SizedBox(height: 8),
 
-            // Table
+            // Table — laporanData sudah di-sort descending
             pw.Table(
               border: pw.TableBorder.all(),
               columnWidths: {
@@ -246,7 +261,6 @@ class _LaporanPageState extends State<LaporanPage> {
         ),
       );
 
-      // Show print dialog
       await Printing.layoutPdf(
         onLayout: (format) async => pdf.save(),
         name: 'Laporan_Peminjaman_${DateFormat('yyyyMMdd').format(now)}.pdf',
@@ -457,7 +471,7 @@ class _LaporanPageState extends State<LaporanPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Data list
+                  // Data list — sudah di-sort descending dari _loadLaporan
                   if (isLoading)
                     const Center(
                       child: CircularProgressIndicator(

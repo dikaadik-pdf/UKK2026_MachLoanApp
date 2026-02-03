@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk2026_machloanapp/screens/logoutpage.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/alatscreen_peminjam.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/detailpeminjaman_peminjam.dart';
+import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 
 
 class DashboardScreenPeminjam extends StatefulWidget {
@@ -17,8 +19,85 @@ class DashboardScreenPeminjam extends StatefulWidget {
 }
 
 class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
-  final List<double> weeklyData = [30, 12, 10, 20, 85, 40, 50];
-  final List<String> weekDays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  // ✅ Data dari database (bukan hardcoded)
+  int totalAlat = 0;
+  int alatTersedia = 0;
+  int alatDipinjam = 0;
+  List<Map<String, dynamic>> weeklyData = [];
+  bool isLoading = true;
+
+  // ✅ Realtime channel references
+  RealtimeChannel? _alatChannel;
+  RealtimeChannel? _peminjamanChannel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+    _subscribeRealtime();
+  }
+
+  @override
+  void dispose() {
+    // ✅ Unsubscribe semua channel saat widget di-dispose
+    if (_alatChannel != null) {
+      SupabaseServices.unsubscribeChannel(_alatChannel!);
+    }
+    if (_peminjamanChannel != null) {
+      SupabaseServices.unsubscribeChannel(_peminjamanChannel!);
+    }
+    super.dispose();
+  }
+
+  // ===== INITIAL FETCH =====
+  Future<void> _loadDashboardData() async {
+    setState(() => isLoading = true);
+
+    try {
+      final statsData = await SupabaseServices.getDashboardStats();
+      final chartData = await SupabaseServices.getWeeklyPeminjamanStats();
+
+      if (mounted) {
+        setState(() {
+          totalAlat = statsData['total_alat'] ?? 0;
+          alatTersedia = statsData['alat_tersedia'] ?? 0;
+          alatDipinjam = statsData['alat_dipinjam'] ?? 0;
+          weeklyData = chartData;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data dashboard: $e')),
+        );
+      }
+    }
+  }
+
+  // ===== REALTIME SUBSCRIPTION =====
+  void _subscribeRealtime() {
+    // ✅ Listen perubahan tabel 'alat' → update stat cards
+    _alatChannel = SupabaseServices.subscribeToDashboardAlat((statsData) {
+      if (mounted) {
+        setState(() {
+          totalAlat = statsData['total_alat'] ?? 0;
+          alatTersedia = statsData['alat_tersedia'] ?? 0;
+          alatDipinjam = statsData['alat_dipinjam'] ?? 0;
+        });
+      }
+    });
+
+    // ✅ Listen perubahan tabel 'peminjaman' & 'detail_peminjaman' → update chart
+    _peminjamanChannel = SupabaseServices.subscribeToDashboardPeminjaman((chartData) {
+      if (mounted) {
+        setState(() {
+          weeklyData = chartData;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,24 +159,30 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
 
             // ===== CONTENT =====
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        _buildStatCard('Total\nAlat', '20'),
-                        const SizedBox(width: 12),
-                        _buildStatCard('Alat\nTersedia', '15'),
-                        const SizedBox(width: 12),
-                        _buildStatCard('Dipinjam', '5'),
-                      ],
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: _loadDashboardData,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                _buildStatCard('Total\nAlat', '$totalAlat'),
+                                const SizedBox(width: 12),
+                                _buildStatCard('Alat\nTersedia', '$alatTersedia'),
+                                const SizedBox(width: 12),
+                                _buildStatCard('Dipinjam', '$alatDipinjam'),
+                              ],
+                            ),
+                            const SizedBox(height: 25),
+                            _buildChartSection(),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 25),
-                    _buildChartSection(),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -160,6 +245,13 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
       decoration: BoxDecoration(
         color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +264,7 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Grafik Peminjaman',
+              'Grafik Peminjaman (7 Hari Terakhir)',
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -182,16 +274,27 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
           ),
           const SizedBox(height: 18),
           Expanded(
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: 100,
-                barGroups: _buildBarGroups(),
-                titlesData: _buildChartTitles(),
-                borderData: FlBorderData(show: false),
-                gridData: _buildChartGrid(),
-              ),
-            ),
+            child: weeklyData.isEmpty
+                ? Center(
+                    child: Text(
+                      'Belum ada data peminjaman',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )
+                : BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: _getMaxY(),
+                      barTouchData: BarTouchData(enabled: true),
+                      barGroups: _buildBarGroups(),
+                      titlesData: _buildChartTitles(),
+                      borderData: FlBorderData(show: false),
+                      gridData: _buildChartGrid(),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -202,6 +305,7 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
   Widget _buildSidebar(BuildContext context) {
     return Drawer(
       backgroundColor: Colors.transparent,
+      elevation: 0,
       child: Align(
         alignment: Alignment.topRight,
         child: Container(
@@ -211,39 +315,85 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
           decoration: BoxDecoration(
             color: const Color(0xFF769DCB),
             borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ===== CLOSE BUTTON =====
               Align(
                 alignment: Alignment.topRight,
-                child: IconButton(
-                  icon:
-                      const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
               ),
-              const SizedBox(height: 10),
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white30,
-                child: Icon(Icons.person,
-                    size: 45, color: Colors.white),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.username,
-                style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 10),
-              const Divider(color: Colors.white30),
 
+              // ===== USER PROFILE SECTION =====
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 45,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.username,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Peminjam',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+              const Divider(color: Colors.white30, thickness: 1, height: 1),
+              const SizedBox(height: 10),
+
+              // ===== MENU ITEMS =====
               _buildSidebarItem(Icons.dashboard, 'Dashboard',
                   () => Navigator.pop(context)),
 
-              /// 🔧 FIX DI SINI
               _buildSidebarItem(Icons.build, 'Alat', () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -276,6 +426,8 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                       builder: (_) => const AccountScreen()),
                 );
               }),
+
+              const SizedBox(height: 15),
             ],
           ),
         ),
@@ -287,15 +439,21 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
       IconData icon, String title, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
         padding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white),
+            Icon(icon, color: Colors.white, size: 22),
             const SizedBox(width: 15),
-            Text(title,
-                style: GoogleFonts.poppins(color: Colors.white)),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),
@@ -303,44 +461,64 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
   }
 
   // ===== CHART HELPERS =====
-  List<BarChartGroupData> _buildBarGroups() =>
-      List.generate(weeklyData.length, (i) {
-        return BarChartGroupData(
-          x: i,
-          barRods: [
-            BarChartRodData(
-              toY: weeklyData[i],
-              color: const Color(0xFF769DCB),
-              width: 16,
-            ),
-          ],
-        );
-      });
+  double _getMaxY() {
+    if (weeklyData.isEmpty) return 100;
+    final maxValue = weeklyData
+        .map((e) => (e['total'] as num).toDouble())
+        .reduce((a, b) => a > b ? a : b);
+    return maxValue > 0 ? maxValue + 10 : 100;
+  }
 
-  FlTitlesData _buildChartTitles() => FlTitlesData(
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (v, _) =>
-                Text(weekDays[v.toInt()],
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 10)),
+  List<BarChartGroupData> _buildBarGroups() {
+    return List.generate(
+      weeklyData.length,
+      (i) => BarChartGroupData(
+        x: i,
+        barRods: [
+          BarChartRodData(
+            toY: (weeklyData[i]['total'] as num).toDouble(),
+            color: const Color(0xFF769DCB),
+            width: 16,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  FlTitlesData _buildChartTitles() {
+    return FlTitlesData(
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (v, _) {
+            if (v.toInt() >= weeklyData.length) return const Text('');
+            return Text(
+              weeklyData[v.toInt()]['day_label'] ?? '',
+              style: const TextStyle(color: Colors.white70, fontSize: 10),
+            );
+          },
+        ),
+      ),
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 30,
+          getTitlesWidget: (v, _) => Text(
+            '${v.toInt()}',
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
           ),
         ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (v, _) =>
-                Text(v.toInt().toString(),
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 10)),
-          ),
-        ),
-        topTitles:
-            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles:
-            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    );
+  }
+
+  FlGridData _buildChartGrid() => FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        getDrawingHorizontalLine: (v) =>
+            FlLine(color: Colors.white10, strokeWidth: 1, dashArray: [5, 5]),
       );
-
-  FlGridData _buildChartGrid() => FlGridData(show: true);
 }
