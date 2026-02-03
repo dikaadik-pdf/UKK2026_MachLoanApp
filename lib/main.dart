@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'config/supabase_config.dart';
 import 'screens/splashscreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ WAJIB: init locale date (FIX LocaleDataException)
+  await initializeDateFormatting('id_ID', null);
 
   await Supabase.initialize(
     url: SupabaseConfig.url,

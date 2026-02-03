@@ -7,11 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlatScreenPetugas extends StatefulWidget {
   final String username;
-  
-  const AlatScreenPetugas({
-    super.key,
-    required this.username,
-  });
+
+  const AlatScreenPetugas({super.key, required this.username});
 
   @override
   State<AlatScreenPetugas> createState() => _AlatScreenPetugasState();
@@ -19,11 +16,15 @@ class AlatScreenPetugas extends StatefulWidget {
 
 class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
   final TextEditingController _searchController = TextEditingController();
+
+  // 🔥 PENTING: pisahkan data asli & data tampil
+  List<Map<String, dynamic>> _allKategoriList = [];
   List<Map<String, dynamic>> _kategoriList = [];
+
   bool _loading = true;
   RealtimeChannel? _kategoriChannel;
 
-  //n berdasarkan nama kategori
+  // Icon berdasarkan nama kategori
   final Map<String, IconData> _iconMap = {
     'alat tangan': Icons.handyman_rounded,
     'tangan': Icons.handyman_rounded,
@@ -54,66 +55,93 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     super.dispose();
   }
 
+  // =========================
+  // REALTIME
+  // =========================
   void _setupRealtimeSubscription() {
-    // Auto-refresh ketika admin tambah/hapus kategori
     _kategoriChannel = SupabaseServices.subscribeToKategori((data) {
-      if (mounted) {
-        setState(() {
-          _kategoriList = data;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _allKategoriList = data;
+        _kategoriList = data;
+      });
     });
   }
 
+  // =========================
+  // LOAD DATA
+  // =========================
   Future<void> _loadKategori() async {
     try {
       setState(() => _loading = true);
       final data = await SupabaseServices.getKategori();
-      if (mounted) {
-        setState(() {
-          _kategoriList = data;
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _allKategoriList = data;
+        _kategoriList = data;
+        _loading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
+  // =========================
+  // SEARCH KATEGORI ✅
+  // =========================
+  void _searchKategori(String query) {
+    final lowerQuery = query.toLowerCase();
+
+    setState(() {
+      if (query.isEmpty) {
+        _kategoriList = _allKategoriList;
+      } else {
+        _kategoriList = _allKategoriList.where((kategori) {
+          final nama =
+              kategori['nama_kategori'].toString().toLowerCase();
+          return nama.contains(lowerQuery);
+        }).toList();
+      }
+    });
+  }
+
+  // =========================
+  // ICON HELPER
+  // =========================
   IconData _getIconForKategori(String namaKategori) {
     final lowerName = namaKategori.toLowerCase();
-    
-    // Cari exact match
+
     if (_iconMap.containsKey(lowerName)) {
       return _iconMap[lowerName]!;
     }
-    
-    // Cari partial match
+
     for (var key in _iconMap.keys) {
-      if (lowerName.contains(key) || key.contains(lowerName)) {
+      if (lowerName.contains(key)) {
         return _iconMap[key]!;
       }
     }
-    
-    // Return default icon
+
     return _iconMap['default']!;
   }
 
+  // =========================
+  // UI
+  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
       body: Column(
         children: [
-          // --- HEADER ---
+          // HEADER
           Container(
             width: double.infinity,
             height: 120,
@@ -127,14 +155,14 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -143,7 +171,6 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
                       fontSize: 30,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
-                      height: 1,
                     ),
                   ),
                 ],
@@ -151,140 +178,96 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
             ),
           ),
 
-          // --- CONTENT AREA ---
+          // CONTENT
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF1F4F6F)))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF1F4F6F),
+                    ),
+                  )
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 25,
+                      vertical: 30,
+                    ),
                     child: Column(
                       children: [
-                        // Search Bar
-                        Container(
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: CustomSearchBar(
-                            controller: _searchController,
-                            hintText: 'Cari Alat Disini!',
-                          ),
+                        // SEARCH
+                        CustomSearchBar(
+                          controller: _searchController,
+                          hintText: 'Cari Alat Disini!',
+                          onChanged: _searchKategori,
                         ),
 
                         const SizedBox(height: 25),
 
-                        // Info Text
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Kategori Alat',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1F4F6F),
-                              ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Kategori Alat',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1F4F6F),
                             ),
                           ),
                         ),
 
                         const SizedBox(height: 15),
 
-                        // Grid Kategori
-                        if (_kategoriList.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(40.0),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.category_outlined,
-                                  size: 80,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Belum ada kategori',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
+                        // GRID
+                        _kategoriList.isEmpty
+                            ? Column(
+                                children: [
+                                  Icon(
+                                    Icons.category_outlined,
+                                    size: 80,
+                                    color: Colors.grey[400],
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20,
-                              childAspectRatio: 1.0,
-                            ),
-                            itemCount: _kategoriList.length,
-                            itemBuilder: (context, index) {
-                              final kategori = _kategoriList[index];
-                              return _buildCategoryCard(
-                                context,
-                                _getIconForKategori(kategori['nama_kategori']),
-                                kategori['nama_kategori'],
-                                () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AlatListPetugas(
-                                      username: widget.username,
-                                      idKategori: kategori['id_kategori'],
-                                      namaKategori: kategori['nama_kategori'],
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Belum ada kategori',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
                                     ),
                                   ),
+                                ],
+                              )
+                            : GridView.builder(
+                                shrinkWrap: true,
+                                physics:
+                                    const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 20,
+                                  mainAxisSpacing: 20,
                                 ),
-                              );
-                            },
-                          ),
-
-                        const SizedBox(height: 25),
-
-                        // Info Box (Read-Only Access)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF769DCB).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: const Color(0xFF769DCB),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.info_outline,
-                                color: Color(0xFF1F4F6F),
-                                size: 24,
+                                itemCount: _kategoriList.length,
+                                itemBuilder: (context, index) {
+                                  final kategori = _kategoriList[index];
+                                  return _buildCategoryCard(
+                                    context,
+                                    _getIconForKategori(
+                                        kategori['nama_kategori']),
+                                    kategori['nama_kategori'],
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => AlatListPetugas(
+                                          username: widget.username,
+                                          idKategori:
+                                              kategori['id_kategori'],
+                                          namaKategori:
+                                              kategori['nama_kategori'],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Anda dapat melihat daftar alat dan statusnya.',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: const Color(0xFF1F4F6F),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -294,6 +277,9 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     );
   }
 
+  // =========================
+  // CARD
+  // =========================
   Widget _buildCategoryCard(
     BuildContext context,
     IconData icon,
@@ -317,24 +303,20 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 80,
-              color: const Color(0xFFD9D9D9),
-            ),
+            Icon(icon, size: 80, color: const Color(0xFFD9D9D9)),
             const SizedBox(height: 12),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
                 label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

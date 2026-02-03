@@ -81,8 +81,8 @@ class _PinjamAlatState extends State<PinjamAlat> {
         context: context,
         barrierDismissible: false,
         builder: (_) => SuccessDialog(
-          title: 'Berhasil!',
-          subtitle: 'Peminjaman berhasil diajukan! Menunggu persetujuan petugas.',
+          title: 'Yeayy..!',
+          subtitle: 'Kamu Berhasil Pinjam, Tunggu Persetujuan ya!.',
           onOk: () {
             Navigator.pop(context); // Tutup dialog
             Navigator.pop(context); // Tutup form peminjaman
@@ -96,7 +96,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
       showDialog(
         context: context,
         builder: (_) => SuccessDialog(
-          title: 'Gagal!',
+          title: 'Yahh..!',
           subtitle: 'Gagal mengajukan peminjaman: $e',
           onOk: () => Navigator.pop(context),
         ),

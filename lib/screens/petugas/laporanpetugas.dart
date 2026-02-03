@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 import 'package:pdf/pdf.dart';
@@ -24,11 +25,20 @@ class _LaporanPageState extends State<LaporanPage> {
   bool isLoading = true;
   List<Map<String, dynamic>> laporanData = [];
   int totalAlat = 0;
+  bool _localeInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    _initializeLocale();
     _loadLaporan();
+  }
+
+  Future<void> _initializeLocale() async {
+    if (!_localeInitialized) {
+      await initializeDateFormatting('id_ID', null);
+      _localeInitialized = true;
+    }
   }
 
   Future<void> _loadLaporan() async {
@@ -80,8 +90,8 @@ class _LaporanPageState extends State<LaporanPage> {
       showDialog(
         context: context,
         builder: (_) => SuccessDialog(
-          title: 'Error!',
-          subtitle: 'Gagal memuat laporan: $e',
+          title: 'Hmm..!',
+          subtitle: 'Sebentar, Sepertinya Ada Kesalahan Sistem',
           onOk: () => Navigator.pop(context),
         ),
       );
@@ -90,6 +100,9 @@ class _LaporanPageState extends State<LaporanPage> {
 
   Future<void> _printLaporan() async {
     try {
+      // Pastikan locale sudah diinisialisasi
+      await _initializeLocale();
+
       final pdf = pw.Document();
 
       // Format tanggal untuk header

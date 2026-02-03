@@ -30,8 +30,8 @@ class _AccountScreenState extends State<AccountScreen> {
     final user = await _sessionService.getSession();
     if (user != null && mounted) {
       setState(() {
-        _userName = user.username ?? 'User';
-        _userRole = user.role ?? 'Member';
+        _userName = user.username;
+        _userRole = user.role;
       });
     }
   }
@@ -205,7 +205,7 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (_) => ConfirmationDialog(
         title: 'Hmm...',
-        subtitle: 'Yakin Nih Kamu Mau Keluar Dari Aplikasi?',
+        subtitle: 'Keluar? Ingat Passwordmu Ya!',
         onBack: () => Navigator.pop(context),
         onContinue: () async {
           Navigator.pop(context);
@@ -238,7 +238,7 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (_) => SuccessDialog(
         title: 'Dadah!',
-        subtitle: 'Sampai Jumpa Lagi!, Ingat Kata Sandimu Ya!',
+        subtitle: 'Anda telah keluar dari aplikasi.',
         onOk: () {
           Navigator.pushAndRemoveUntil(
             context,

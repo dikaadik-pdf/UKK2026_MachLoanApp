@@ -4,6 +4,92 @@ class SupabaseServices {
   static final SupabaseClient _client = Supabase.instance.client;
 
   // ==========================================
+  // DASHBOARD SERVICES
+  // ==========================================
+
+  /// Mendapatkan statistik untuk dashboard admin
+  static Future<Map<String, dynamic>> getDashboardStats() async {
+    try {
+      final alatResponse = await _client
+          .from('alat')
+          .select('stok_total, stok_tersedia');
+
+      int totalAlat = 0;
+      int alatTersedia = 0;
+
+      for (var alat in alatResponse) {
+        totalAlat += (alat['stok_total'] as num).toInt();
+        alatTersedia += (alat['stok_tersedia'] as num).toInt();
+      }
+
+      int alatDipinjam = totalAlat - alatTersedia;
+
+      return {
+        'total_alat': totalAlat,
+        'alat_tersedia': alatTersedia,
+        'alat_dipinjam': alatDipinjam,
+      };
+    } catch (e) {
+      throw Exception('Gagal memuat statistik dashboard: $e');
+    }
+  }
+
+  /// Mendapatkan data peminjaman mingguan (7 hari terakhir)
+  static Future<List<Map<String, dynamic>>> getWeeklyPeminjamanStats() async {
+    try {
+      final now = DateTime.now();
+      final weekAgo = now.subtract(const Duration(days: 6));
+
+      final response = await _client
+          .from('peminjaman')
+          .select('tanggal_pinjam, detail_peminjaman!inner(jumlah)')
+          .gte('tanggal_pinjam', weekAgo.toUtc().toIso8601String())
+          .lte('tanggal_pinjam', now.toUtc().toIso8601String());
+
+      Map<String, int> dailyCount = {};
+
+      for (int i = 0; i < 7; i++) {
+        final date = weekAgo.add(Duration(days: i));
+        final dateKey = date.toIso8601String().split('T')[0];
+        dailyCount[dateKey] = 0;
+      }
+
+      for (var peminjaman in response) {
+        final tanggal = (peminjaman['tanggal_pinjam'] as String).split('T')[0];
+        final details = peminjaman['detail_peminjaman'] as List;
+
+        int jumlahTotal = 0;
+        for (var detail in details) {
+          jumlahTotal += (detail['jumlah'] as num).toInt();
+        }
+
+        if (dailyCount.containsKey(tanggal)) {
+          dailyCount[tanggal] = (dailyCount[tanggal] ?? 0) + jumlahTotal;
+        }
+      }
+
+      final List<String> dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+      List<Map<String, dynamic>> result = [];
+
+      for (int i = 0; i < 7; i++) {
+        final date = weekAgo.add(Duration(days: i));
+        final dateKey = date.toIso8601String().split('T')[0];
+        final dayIndex = date.weekday - 1; // 0 = Senin, 6 = Minggu
+
+        result.add({
+          'date': dateKey,
+          'day_label': dayLabels[dayIndex],
+          'total': dailyCount[dateKey] ?? 0,
+        });
+      }
+
+      return result;
+    } catch (e) {
+      throw Exception('Gagal memuat data grafik: $e');
+    }
+  }
+
+  // ==========================================
   // KATEGORI SERVICES
   // ==========================================
 
@@ -61,15 +147,12 @@ class SupabaseServices {
     }
   }
 
-  // ==========================================
-  // SEARCH KATEGORI (TAMBAHAN)
-  // ==========================================
   static Future<List<Map<String, dynamic>>> searchKategori(
     String keyword,
   ) async {
     try {
       if (keyword.trim().isEmpty) {
-        return getKategori(); // balikin semua kalau kosong
+        return getKategori();
       }
 
       final response = await _client
@@ -197,12 +280,11 @@ class SupabaseServices {
   // PEMINJAMAN SERVICES
   // ==========================================
 
-  /// Generate kode peminjaman otomatis (format: PJM-YYYYMMDD-XXX)
   static Future<String> _generateKodePeminjaman() async {
     final now = DateTime.now();
     final dateStr =
         '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-    final prefix = 'PJM-$dateStr-';
+    final prefix = 'MCHL-$dateStr-';
 
     try {
       final response = await _client
@@ -225,7 +307,6 @@ class SupabaseServices {
     }
   }
 
-  /// Create peminjaman baru (dipanggil dari PinjamAlat)
   static Future<void> createPeminjaman({
     required String idUser,
     required int idAlat,
@@ -234,17 +315,15 @@ class SupabaseServices {
     required DateTime estimasiKembali,
   }) async {
     try {
-      // Generate kode peminjaman
       final kodePeminjaman = await _generateKodePeminjaman();
 
-      // Insert ke tabel peminjaman
       final peminjamanResponse = await _client
           .from('peminjaman')
           .insert({
             'kode_peminjaman': kodePeminjaman,
             'id_user': idUser,
-            'tanggal_pinjam': tanggalPinjam.toIso8601String().split('T')[0],
-            'estimasi_kembali': estimasiKembali.toIso8601String().split('T')[0],
+            'tanggal_pinjam': tanggalPinjam.toUtc().toIso8601String(),
+            'estimasi_kembali': estimasiKembali.toUtc().toIso8601String(),
             'status': 'menunggu',
           })
           .select()
@@ -252,14 +331,12 @@ class SupabaseServices {
 
       final idPeminjaman = peminjamanResponse['id_peminjaman'];
 
-      // Insert ke tabel detail_peminjaman
       await _client.from('detail_peminjaman').insert({
         'id_peminjaman': idPeminjaman,
         'id_alat': idAlat,
         'jumlah': jumlah,
       });
 
-      // Log aktivitas
       await _client.from('log_aktivitas').insert({
         'id_user': idUser,
         'aktivitas': 'Mengajukan peminjaman $kodePeminjaman',
@@ -269,7 +346,6 @@ class SupabaseServices {
     }
   }
 
-  /// Get daftar peminjaman berdasarkan status (untuk petugas)
   static Future<List<Map<String, dynamic>>> getPeminjamanByStatus(
     String status,
   ) async {
@@ -294,7 +370,6 @@ class SupabaseServices {
     }
   }
 
-  /// Subscribe realtime untuk peminjaman berdasarkan status
   static RealtimeChannel subscribeToPeminjamanByStatus(
     String status,
     Function(List<Map<String, dynamic>>) onData,
@@ -316,7 +391,6 @@ class SupabaseServices {
     return channel;
   }
 
-  /// Update status peminjaman (Setujui/Tolak)
   static Future<void> updateStatusPeminjaman({
     required int idPeminjaman,
     required String newStatus,
@@ -325,13 +399,11 @@ class SupabaseServices {
     int? idAlat,
   }) async {
     try {
-      // Update status peminjaman
       await _client
           .from('peminjaman')
           .update({'status': newStatus})
           .eq('id_peminjaman', idPeminjaman);
 
-      // Jika disetujui, kurangi stok tersedia
       if (newStatus == 'disetujui' && stokDikurangi != null && idAlat != null) {
         await _client.rpc(
           'kurangi_stok_tersedia',
@@ -339,7 +411,6 @@ class SupabaseServices {
         );
       }
 
-      // Log aktivitas
       final actionText = newStatus == 'disetujui' ? 'menyetujui' : 'menolak';
       await _client.from('log_aktivitas').insert({
         'id_user': idPetugas,
@@ -350,7 +421,6 @@ class SupabaseServices {
     }
   }
 
-  /// Get user ID dari username
   static Future<String> getUserIdByUsername(String username) async {
     try {
       final response = await _client
@@ -364,7 +434,6 @@ class SupabaseServices {
     }
   }
 
-  /// Get alat by ID
   static Future<Map<String, dynamic>> getAlatById(int idAlat) async {
     try {
       final response = await _client
@@ -382,7 +451,6 @@ class SupabaseServices {
   // LAPORAN SERVICES
   // ==========================================
 
-  /// Get laporan peminjaman dengan filter waktu
   static Future<List<Map<String, dynamic>>> getLaporanPeminjaman({
     DateTime? startDate,
     DateTime? endDate,
@@ -402,12 +470,11 @@ class SupabaseServices {
             pengembalian(tanggal_pengembalian, total_denda)
           ''');
 
-      // Filter berdasarkan tanggal jika ada
       if (startDate != null) {
-        query = query.gte('tanggal_pinjam', startDate.toIso8601String().split('T')[0]);
+        query = query.gte('tanggal_pinjam', startDate.toUtc().toIso8601String());
       }
       if (endDate != null) {
-        query = query.lte('tanggal_pinjam', endDate.toIso8601String().split('T')[0]);
+        query = query.lte('tanggal_pinjam', endDate.toUtc().toIso8601String());
       }
 
       final response = await query.order('tanggal_pinjam', ascending: false);
@@ -418,7 +485,6 @@ class SupabaseServices {
     }
   }
 
-  /// Get total jumlah alat yang dipinjam berdasarkan filter
   static Future<int> getTotalAlatDipinjam({
     DateTime? startDate,
     DateTime? endDate,
@@ -429,10 +495,10 @@ class SupabaseServices {
           ''');
 
       if (startDate != null) {
-        query = query.gte('tanggal_pinjam', startDate.toIso8601String().split('T')[0]);
+        query = query.gte('tanggal_pinjam', startDate.toUtc().toIso8601String());
       }
       if (endDate != null) {
-        query = query.lte('tanggal_pinjam', endDate.toIso8601String().split('T')[0]);
+        query = query.lte('tanggal_pinjam', endDate.toUtc().toIso8601String());
       }
 
       final response = await query;
@@ -441,7 +507,7 @@ class SupabaseServices {
       for (var item in response) {
         final details = item['detail_peminjaman'] as List;
         for (var detail in details) {
-          total += (detail['jumlah'] as int);
+          total += (detail['jumlah'] as num).toInt();
         }
       }
 

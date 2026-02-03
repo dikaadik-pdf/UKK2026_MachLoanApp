@@ -29,50 +29,50 @@ class _CustomFilterBarState extends State<CustomFilterBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 55, 
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      height: 45,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(35),
+        borderRadius: BorderRadius.circular(30),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal, 
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: widget.filters.map((filter) {
-            final isSelected = filter == selectedFilter;
+        itemCount: widget.filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final filter = widget.filters[index];
+          final isSelected = filter == selectedFilter;
 
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  selectedFilter = filter;
-                });
-                widget.onFilterSelected?.call(filter);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF769DCB)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Text(
-                  filter,
-                  style: GoogleFonts.poppins( 
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
+          return GestureDetector(
+            onTap: () {
+              setState(() => selectedFilter = filter);
+              widget.onFilterSelected?.call(filter);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF769DCB)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Text(
+                filter,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

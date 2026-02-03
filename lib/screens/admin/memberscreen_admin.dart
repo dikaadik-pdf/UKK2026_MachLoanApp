@@ -65,8 +65,8 @@ class _MemberScreenState extends State<MemberScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
-        title: 'Konfirmasi Hapus',
-        subtitle: 'Yakin ingin menghapus ${member.nama}?\nAkun login mereka juga akan terhapus.',
+        title: 'Hmm..',
+        subtitle: 'Kamu Yakin Hapus Akun Dia?',
         onBack: () => Navigator.pop(context, false),
         onContinue: () => Navigator.pop(context, true),
       ),

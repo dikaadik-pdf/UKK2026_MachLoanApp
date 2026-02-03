@@ -238,8 +238,8 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
-        title: 'Konfirmasi',
-        subtitle: 'Yakin ingin menambahkan kategori "${_namaController.text.trim()}"?',
+        title: 'Beneran?',
+        subtitle: 'Apakah Kamu Yakin Menambah Kategori Ini"?',
         onBack: () => Navigator.pop(context, false),
         onContinue: () => Navigator.pop(context, true),
       ),

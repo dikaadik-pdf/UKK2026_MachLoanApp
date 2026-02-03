@@ -25,6 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isSubmitted = false;
+  final Set<String> _touchedFields = {};
 
   @override
   void initState() {
@@ -45,22 +47,24 @@ class _LoginScreenState extends State<LoginScreen> {
   // Fungsi untuk validasi format email
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Masukkan Email Anda!';
+      return 'Masukkan Email Kamu Ya!';
     }
-    
+
     // Regular expression untuk validasi email
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
-    
+
     if (!emailRegex.hasMatch(value)) {
-      return 'Format email tidak valid!';
+      return 'Format emailmu tidak sesuai :(';
     }
-    
+
     return null;
   }
 
   Future<void> _handleLogin() async {
+    setState(() => _isSubmitted = true);
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -98,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
           context: context,
           builder: (_) => SuccessDialog(
             title: 'Yah..',
-            subtitle:'Coba Cek Email atau Passwordmu Dulu Deh!',
+            subtitle: 'Coba Cek Email atau Passwordmu Dulu Deh!',
             onOk: () => Navigator.pop(context),
           ),
         );
@@ -227,17 +231,21 @@ class _LoginScreenState extends State<LoginScreen> {
               _buildLabel('Email'),
               _buildInput(
                 controller: _emailController,
-                hint: 'Masukkan Email',
+                hint: 'Masukkan Emailmu Disini!',
+                fieldName: 'email',
                 validator: _validateEmail,
               ),
               const SizedBox(height: 25),
               _buildLabel('Password'),
               _buildInput(
                 controller: _passwordController,
-                hint: 'Masukkan Password',
+                hint: 'Masukkan Passwordmu Disini!',
+                fieldName: 'password',
                 obscure: _obscurePassword,
                 validator: (value) =>
-                    value == null || value.isEmpty ? 'Masukkan Password Anda!' : null,
+                    value == null || value.isEmpty
+                        ? 'Masukkan Password Kamu Ya!'
+                        : null,
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -301,10 +309,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildInput({
     required TextEditingController controller,
     required String hint,
+    required String fieldName,
     String? Function(String?)? validator,
     bool obscure = false,
     Widget? suffix,
   }) {
+    // Cek apakah error boleh ditampilkan:
+    // - Sudah pernah klik tombol Login (_isSubmitted), atau
+    // - Field ini sudah pernah di-tap (_touchedFields)
+    final bool showError =
+        _isSubmitted || _touchedFields.contains(fieldName);
+
+    final String? errorText = showError ? validator?.call(controller.text) : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -320,14 +337,27 @@ class _LoginScreenState extends State<LoginScreen> {
           child: TextFormField(
             controller: controller,
             obscureText: obscure,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+            autovalidateMode: AutovalidateMode.disabled,
             validator: validator,
             style: GoogleFonts.poppins(color: Colors.white),
+            onTap: () {
+              // Tandai field ini sudah pernah di-tap
+              if (!_touchedFields.contains(fieldName)) {
+                setState(() => _touchedFields.add(fieldName));
+              }
+            },
+            onChanged: (value) {
+              // Trigger rebuild supaya error text update real-time
+              // setelah field ditouching atau sudah di-submit
+              if (_touchedFields.contains(fieldName) || _isSubmitted) {
+                setState(() {});
+              }
+            },
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: GoogleFonts.poppins(color: Colors.white60),
               border: InputBorder.none,
-              errorStyle: const TextStyle(height: 0, fontSize: 0), 
+              errorStyle: const TextStyle(height: 0, fontSize: 0),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
               suffixIcon: suffix == null
@@ -339,27 +369,23 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-        ValueListenableBuilder(
-          valueListenable: controller,
-          builder: (context, value, child) {
-            final errorText = validator?.call(controller.text);
-            if (errorText == null) return const SizedBox.shrink();
-            
-            return Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxWidth: 335),
-              padding: const EdgeInsets.only(left: 25, top: 8),
-              child: Text(
-                errorText,
-                style: GoogleFonts.poppins(
-                  color: Colors.red,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+        // Error text — hanya muncul kalau sudah di-submit atau field sudah di-tap
+        if (errorText != null)
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 335),
+            padding: const EdgeInsets.only(left: 25, top: 8),
+            child: Text(
+              errorText,
+              style: GoogleFonts.poppins(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-            );
-          },
-        ),
+            ),
+          )
+        else
+          const SizedBox.shrink(),
       ],
     );
   }

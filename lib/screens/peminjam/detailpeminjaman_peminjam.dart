@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
+import 'package:ukk2026_machloanapp/screens/peminjam/kartu_peminjaman.dart';
 
 // =====================
 // DATA MODEL
@@ -13,7 +14,6 @@ class PeminjamanModel {
   final String status;
   final DateTime tanggalPinjaman;
   final DateTime estimasiPengembalian;
-  final DateTime? dikembalikanPada;
   final int denda;
 
   PeminjamanModel({
@@ -22,7 +22,6 @@ class PeminjamanModel {
     required this.status,
     required this.tanggalPinjaman,
     required this.estimasiPengembalian,
-    this.dikembalikanPada,
     required this.denda,
   });
 }
@@ -34,9 +33,9 @@ class PeminjamanPeminjamScreen extends StatefulWidget {
   final String username;
 
   const PeminjamanPeminjamScreen({
-    Key? key,
+    super.key,
     required this.username,
-  }) : super(key: key);
+  });
 
   @override
   State<PeminjamanPeminjamScreen> createState() =>
@@ -49,11 +48,9 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
 
   List<PeminjamanModel> data = [];
 
-  /// MAP FILTER -> STATUS DATABASE
-  /// ACC PETUGAS = status 'dipinjam' -> MASUK PENGEMBALIAN
   final Map<String, String> statusMap = {
     'Menunggu': 'menunggu',
-    'Pengembalian': 'dipinjam',
+    'Pengembalian': 'disetujui',
     'Ditolak': 'ditolak',
     'Selesai': 'dikembalikan',
   };
@@ -85,7 +82,6 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
             pengembalian(tanggal_pengembalian, total_denda)
           ''')
           .eq('id_user', userId)
-          // INI KUNCI FILTER
           .eq('status', statusMap[activeFilter]!)
           .order('tanggal_pinjam', ascending: false);
 
@@ -104,9 +100,6 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
           status: e['status'],
           tanggalPinjaman: DateTime.parse(e['tanggal_pinjam']),
           estimasiPengembalian: DateTime.parse(e['estimasi_kembali']),
-          dikembalikanPada: pengembalian != null
-              ? DateTime.parse(pengembalian['tanggal_pengembalian'])
-              : null,
           denda: pengembalian?['total_denda'] ?? 0,
         );
       }).toList();
@@ -115,6 +108,111 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
     }
 
     setState(() => isLoading = false);
+  }
+
+  // =====================
+  // HANDLE KEMBALIKAN
+  // =====================
+  Future<void> _handleKembalikan(PeminjamanModel d) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Konfirmasi Pengembalian',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin mengembalikan "${d.namaAlat}"?',
+          style: GoogleFonts.poppins(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Batal', style: GoogleFonts.poppins()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF9ACD32),
+            ),
+            child: Text('Ya, Kembalikan', style: GoogleFonts.poppins()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final supabase = Supabase.instance.client;
+      final now = DateTime.now();
+
+      // Hitung denda
+      int daysLate = 0;
+      int totalDenda = 0;
+      if (now.isAfter(d.estimasiPengembalian)) {
+        daysLate = now.difference(d.estimasiPengembalian).inDays;
+        totalDenda = daysLate * 5000;
+      }
+
+      // ✅ Format tanggal jadi DATE string (YYYY-MM-DD)
+      final tanggalStr = now.toIso8601String().split('T')[0];
+
+      // Insert ke tabel pengembalian
+      await supabase.from('pengembalian').insert({
+        'id_peminjaman': d.idPeminjaman,
+        'tanggal_pengembalian': tanggalStr,
+        'terlambat': daysLate,
+        'total_denda': totalDenda,
+      });
+
+      // Update status peminjaman menjadi 'dikembalikan'
+      await supabase
+          .from('peminjaman')
+          .update({'status': 'dikembalikan'})
+          .eq('id_peminjaman', d.idPeminjaman);
+
+      // Reload data
+      await _loadData();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Peminjaman berhasil dikembalikan!',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      debugPrint('ERROR KEMBALIKAN: $e');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal mengembalikan: $e',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // =====================
+  // HANDLE LIHAT KARTU PINJAM
+  // =====================
+  void _handleLihatKartu(PeminjamanModel d) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoanCardScreen(idPeminjaman: d.idPeminjaman),
+      ),
+    );
   }
 
   String _fmt(DateTime d) => DateFormat('d/MMM/yy').format(d);
@@ -159,8 +257,7 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back_ios_new,
-                color: Colors.white),
+            child: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           ),
           const SizedBox(width: 10),
           Text('Peminjaman',
@@ -228,27 +325,111 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
         color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(25),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(d.namaAlat,
-                style: GoogleFonts.poppins(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
-            const SizedBox(height: 6),
-            _buildStatusBadge(d),
-            const SizedBox(height: 12),
-            _buildRow('Tanggal Peminjaman', _fmt(d.tanggalPinjaman)),
-            _buildRow(
-                'Estimasi Pengembalian', _fmt(d.estimasiPengembalian)),
-            if (d.dikembalikanPada != null)
-              _buildRow(
-                  'Dikembalikan Pada', _fmt(d.dikembalikanPada!)),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Content utama card
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(d.namaAlat,
+                    style: GoogleFonts.poppins(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+                const SizedBox(height: 6),
+                _buildStatusBadge(d),
+                const SizedBox(height: 12),
+                _buildRow('Tanggal Peminjaman', _fmt(d.tanggalPinjaman)),
+                _buildRow(
+                    'Estimasi Pengembalian', _fmt(d.estimasiPengembalian)),
+              ],
+            ),
+          ),
+
+          // ✅ BUTTON CONTAINER - MENYAMBUNG dengan card (inner child)
+          if (activeFilter == 'Pengembalian')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF769DCB), // Inner container lebih terang
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(25),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Button Lihat Kartu Pinjam
+                  Flexible(
+                    child: SizedBox(
+                      height: 30, // ✅ Max 30px
+                      child: ElevatedButton(
+                        onPressed: () => _handleLihatKartu(d),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF788291),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          elevation: 0,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Lihat Kartu Pinjam',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Button Kembalikan
+                  Flexible(
+                    child: SizedBox(
+                      height: 30, // ✅ Max 30px
+                      child: ElevatedButton(
+                        onPressed: () => _handleKembalikan(d),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF9ACD32),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          elevation: 0,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Kembalikan',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -304,9 +485,20 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
         color: const Color(0xFFE52510),
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Text(
-        'Setiap keterlambatan dikenakan denda 5000 / hari',
-        style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.warning, color: Colors.white, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Setiap keterlambatan pengembalian maka dikenakan denda sebesar 5000/hari',
+              style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }

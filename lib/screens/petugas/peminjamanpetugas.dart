@@ -296,11 +296,10 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
     final DateTime estimasiKembali = DateTime.parse(data['estimasi_kembali']);
     
     // Data pengembalian (jika ada)
-    String? dikembalikanPada;
+
     int? totalDenda;
     if (data['pengembalian'] != null && (data['pengembalian'] as List).isNotEmpty) {
       final pengembalian = (data['pengembalian'] as List)[0];
-      dikembalikanPada = dateFormatter.format(DateTime.parse(pengembalian['tanggal_pengembalian']));
       totalDenda = pengembalian['total_denda'];
     }
 
@@ -341,8 +340,6 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
                 _buildTextRow('Jumlah', ': $jumlah unit'),
                 _buildTextRow('Tanggal Peminjaman', ': ${dateFormatter.format(tanggalPinjam)}'),
                 _buildTextRow('Estimasi Pengembalian', ': ${dateFormatter.format(estimasiKembali)}'),
-                if (dikembalikanPada != null)
-                  _buildTextRow('Dikembalikan Pada', ': $dikembalikanPada'),
                 _buildTextRow('Denda/Hari', ': Rp ${dendaPerHari.toString()}'),
               ],
             ),
@@ -512,7 +509,7 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Informasi Pengembalian\nSetiap keterlambatan pengembalian maka dikenakan denda sebesar 5000/Hari',
+              'Informasi Pengembalian\nSelalu Ingatkan Peminjam Untuk Mengembalikan Alat Tepat Waktu Ya!',
               style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
             ),
           ),

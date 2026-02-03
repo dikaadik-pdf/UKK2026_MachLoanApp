@@ -107,7 +107,7 @@ class NavigationService {
             ),
             const SizedBox(height: 10),
             Text(
-              'Role: ${user.role?.toUpperCase()}',
+              'Role: ${user.role.toUpperCase()}',
               style: const TextStyle(fontSize: 18, color: Colors.grey),
             ),
             const SizedBox(height: 30),

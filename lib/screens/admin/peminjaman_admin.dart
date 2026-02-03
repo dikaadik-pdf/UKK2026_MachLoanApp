@@ -29,37 +29,37 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
         currentUserId = user.id;
-        
+
         // Get user role from users table untuk cek permission
         final userData = await Supabase.instance.client
             .from('users')
             .select('role')
             .eq('id_user', user.id)
             .single();
-        
+
         currentUserRole = userData['role'];
       }
-      
+
       await _loadPeminjamanData();
       _subscribeToRealtimeUpdates();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
 
   Future<void> _loadPeminjamanData() async {
     if (!mounted) return;
-    
+
     setState(() => isLoading = true);
-    
+
     try {
       // Load data berdasarkan filter status
       final data = await _getPeminjamanByStatus();
-      
+
       if (mounted) {
         setState(() {
           peminjamanList = data;
@@ -94,7 +94,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
           ''')
           .eq('status', activeFilter)
           .order('tanggal_pinjam', ascending: false);
-      
+
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       throw Exception('Gagal memuat peminjaman: $e');
@@ -134,8 +134,20 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
     if (dateStr == null) return '-';
     try {
       final date = DateTime.parse(dateStr);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 
-                      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
+      ];
       return '${date.day}/${months[date.month - 1]}/${date.year.toString().substring(2)}';
     } catch (e) {
       return dateStr;
@@ -195,7 +207,11 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -238,15 +254,19 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : peminjamanList.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                        onRefresh: _loadPeminjamanData,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                          itemCount: peminjamanList.length,
-                          itemBuilder: (context, index) => _buildLoanCard(peminjamanList[index]),
-                        ),
+                ? _buildEmptyState()
+                : RefreshIndicator(
+                    onRefresh: _loadPeminjamanData,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 25,
+                        vertical: 10,
                       ),
+                      itemCount: peminjamanList.length,
+                      itemBuilder: (context, index) =>
+                          _buildLoanCard(peminjamanList[index]),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -258,26 +278,16 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.inbox_outlined,
-            size: 64,
-            color: Colors.grey[600],
-          ),
+          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[600]),
           const SizedBox(height: 16),
           Text(
             'Tidak ada data peminjaman',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'Status: ${_getStatusDisplay(activeFilter)}',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -309,26 +319,29 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
 
   Widget _buildLoanCard(Map<String, dynamic> data) {
     final detailPeminjaman = data['detail_peminjaman'] as List;
-    final firstDetail = detailPeminjaman.isNotEmpty ? detailPeminjaman[0] : null;
+    final firstDetail = detailPeminjaman.isNotEmpty
+        ? detailPeminjaman[0]
+        : null;
     final alat = firstDetail?['alat'];
     final namaAlat = alat?['nama_alat'] ?? 'Unknown';
     final jumlah = firstDetail?['jumlah'] ?? 0;
     final dendaPerHari = alat?['denda_per_hari'] ?? 0;
-    
-    final pengembalian = data['pengembalian'];
-    final tanggalPengembalian = pengembalian != null 
-        ? pengembalian['tanggal_pengembalian'] 
+
+    final pengembalianList = data['pengembalian'] as List?;
+    final pengembalian =
+        (pengembalianList != null && pengembalianList.isNotEmpty)
+        ? pengembalianList.first
         : null;
     final totalDenda = pengembalian?['total_denda'] ?? 0;
     final terlambat = pengembalian?['terlambat'] ?? 0;
 
     final status = data['status'] as String;
     final kodePeminjaman = data['kode_peminjaman'] ?? '-';
-    
+
     // Get username dari relasi users
     final users = data['users'];
     final username = users?['username'] ?? 'Unknown';
-    
+
     // Cek apakah bisa dihapus: admin dan status dikembalikan
     final canDelete = currentUserRole == 'admin' && status == 'dikembalikan';
 
@@ -366,8 +379,13 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
                   ),
                   if (canDelete)
                     IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.white70, size: 24),
-                      onPressed: () => _showDeleteConfirmation(data['id_peminjaman']),
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.white70,
+                        size: 24,
+                      ),
+                      onPressed: () =>
+                          _showDeleteConfirmation(data['id_peminjaman']),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -376,10 +394,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
               const SizedBox(height: 5),
               Text(
                 'Kode: $kodePeminjaman',
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  color: Colors.white70,
-                ),
+                style: GoogleFonts.poppins(fontSize: 10, color: Colors.white70),
               ),
               const SizedBox(height: 5),
               // Tampilkan username peminjam
@@ -402,14 +417,21 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
               _buildStatusBadges(status, totalDenda, terlambat),
               const SizedBox(height: 10),
               _buildTextRow('Jumlah', ': $jumlah unit'),
-              _buildTextRow('Tanggal Peminjaman', ': ${_formatDate(data['tanggal_pinjam'])}'),
-              _buildTextRow('Estimasi Pengembalian', ': ${_formatDate(data['estimasi_kembali'])}'),
-              if (tanggalPengembalian != null)
-                _buildTextRow('Dikembalikan Pada', ': ${_formatDate(tanggalPengembalian)}'),
+              _buildTextRow(
+                'Tanggal Peminjaman',
+                ': ${_formatDate(data['tanggal_pinjam'])}',
+              ),
+              _buildTextRow(
+                'Estimasi Pengembalian',
+                ': ${_formatDate(data['estimasi_kembali'])}',
+              ),
               if (terlambat > 0)
                 _buildTextRow('Keterlambatan', ': $terlambat hari'),
               if (dendaPerHari > 0 && status == 'disetujui')
-                _buildTextRow('Denda/Hari', ': Rp ${_formatCurrency(dendaPerHari)}'),
+                _buildTextRow(
+                  'Denda/Hari',
+                  ': Rp ${_formatCurrency(dendaPerHari)}',
+                ),
             ],
           ),
         ],
@@ -422,9 +444,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
       return Wrap(
         spacing: 10,
         runSpacing: 5,
-        children: [
-          _badge('Disetujui', Colors.green),
-        ],
+        children: [_badge('Disetujui', Colors.green)],
       );
     } else if (status == 'dikembalikan') {
       return Wrap(
@@ -439,7 +459,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
         ],
       );
     }
-    
+
     return _badge(_getStatusDisplay(status), _getStatusColor(status));
   }
 
@@ -506,10 +526,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Hapus',
-              style: GoogleFonts.poppins(color: Colors.red),
-            ),
+            child: Text('Hapus', style: GoogleFonts.poppins(color: Colors.red)),
           ),
         ],
       ),
@@ -523,7 +540,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
             .select('kode_peminjaman')
             .eq('id_peminjaman', idPeminjaman)
             .single();
-        
+
         final kodePeminjaman = peminjamanData['kode_peminjaman'];
 
         // Hapus peminjaman (cascade akan menghapus detail_peminjaman dan pengembalian)
@@ -533,13 +550,11 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
             .eq('id_peminjaman', idPeminjaman);
 
         // Log aktivitas admin
-        await Supabase.instance.client
-            .from('log_aktivitas')
-            .insert({
-              'id_user': currentUserId,
-              'aktivitas': 'Admin menghapus riwayat peminjaman $kodePeminjaman',
-            });
-        
+        await Supabase.instance.client.from('log_aktivitas').insert({
+          'id_user': currentUserId,
+          'aktivitas': 'Admin menghapus riwayat peminjaman $kodePeminjaman',
+        });
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -592,14 +607,16 @@ class CustomFilterBar extends StatelessWidget {
           final filter = filters[index];
           final label = filterLabels[index];
           final isSelected = filter == initialFilter;
-          
+
           return Expanded(
             child: GestureDetector(
               onTap: () => onFilterSelected(filter),
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
+                  color: isSelected
+                      ? const Color(0xFF769DCB)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
@@ -607,7 +624,9 @@ class CustomFilterBar extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ),
