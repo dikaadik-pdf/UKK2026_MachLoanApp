@@ -36,18 +36,18 @@ class _MemberScreenState extends State<MemberScreen> {
 
     try {
       final members = await _memberService.getAllMembers();
-      
+
       if (mounted) {
         setState(() {
           _allMembers = members;
           _isLoading = false;
         });
-        
+
         print('✅ UI Updated: ${members.length} members loaded');
       }
     } catch (e) {
       print('❌ Error loading members: $e');
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -78,13 +78,12 @@ class _MemberScreenState extends State<MemberScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      ),
+      builder: (context) =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
     );
 
     final result = await _memberService.deleteMember(member.id);
-    
+
     if (mounted) {
       Navigator.pop(context); // Close loading
 
@@ -170,9 +169,7 @@ class _MemberScreenState extends State<MemberScreen> {
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF1F4F6F),
-        ),
+        child: CircularProgressIndicator(color: Color(0xFF1F4F6F)),
       );
     }
 
@@ -183,11 +180,7 @@ class _MemberScreenState extends State<MemberScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 60,
-                color: Colors.red,
-              ),
+              const Icon(Icons.error_outline, size: 60, color: Colors.red),
               const SizedBox(height: 16),
               Text(
                 'Gagal memuat data',
@@ -201,10 +194,7 @@ class _MemberScreenState extends State<MemberScreen> {
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
@@ -235,7 +225,7 @@ class _MemberScreenState extends State<MemberScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 25),
-          
+
           // Filter Bar
           Center(
             child: CustomFilterBar(
@@ -247,9 +237,9 @@ class _MemberScreenState extends State<MemberScreen> {
               },
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Counter
           Text(
             '$_currentFilter : ${_filteredMembers.length}',
@@ -258,9 +248,9 @@ class _MemberScreenState extends State<MemberScreen> {
               fontSize: 14,
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // List
           Expanded(
             child: RefreshIndicator(
@@ -375,7 +365,7 @@ class _MemberScreenState extends State<MemberScreen> {
                 onPressed: () => _handleDelete(member),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -386,7 +376,7 @@ class _MemberScreenState extends State<MemberScreen> {
       context: context,
       builder: (context) => EditMemberDialog(member: member),
     );
-    
+
     if (result != null && result['success'] == true) {
       await _loadMembers();
     }
@@ -414,11 +404,7 @@ class _MemberScreenState extends State<MemberScreen> {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 40,
-            ),
+            child: const Icon(Icons.add, color: Colors.white, size: 40),
           ),
         ),
       ),
@@ -430,7 +416,7 @@ class _MemberScreenState extends State<MemberScreen> {
       context: context,
       builder: (context) => const AddMemberDialog(),
     );
-    
+
     if (result != null && result['success'] == true) {
       await _loadMembers();
     }

@@ -35,44 +35,49 @@ class _CustomFilterBarState extends State<CustomFilterBar> {
         color: const Color(0xFF1F4F6F),
         borderRadius: BorderRadius.circular(30),
       ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: widget.filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 6),
-        itemBuilder: (context, index) {
-          final filter = widget.filters[index];
+      child: Row(
+        children: widget.filters.asMap().entries.map((entry) {
+          final index = entry.key;
+          final filter = entry.value;
           final isSelected = filter == selectedFilter;
 
-          return GestureDetector(
-            onTap: () {
-              setState(() => selectedFilter = filter);
-              widget.onFilterSelected?.call(filter);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeInOut,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF769DCB)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(25),
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: index < widget.filters.length - 1 ? 6 : 0,
               ),
-              child: Text(
-                filter,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w400,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => selectedFilter = filter);
+                  widget.onFilterSelected?.call(filter);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF769DCB)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Center(
+                    child: Text(
+                      filter,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }

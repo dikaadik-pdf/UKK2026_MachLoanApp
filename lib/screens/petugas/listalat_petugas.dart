@@ -73,10 +73,7 @@ class _AlatListPetugasState extends State<AlatListPetugas> {
       if (mounted) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -119,8 +116,11 @@ class _AlatListPetugasState extends State<AlatListPetugas> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -186,7 +186,10 @@ class _AlatListPetugasState extends State<AlatListPetugas> {
 
                   // INFO TEXT (READ-ONLY MODE)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF769DCB).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
@@ -228,159 +231,176 @@ class _AlatListPetugasState extends State<AlatListPetugas> {
                             ),
                           )
                         : _filteredAlatList.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.inventory_2_outlined,
-                                      size: 80,
-                                      color: Colors.grey[400],
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 80,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _searchController.text.isEmpty
+                                      ? 'Belum ada alat'
+                                      : 'Alat tidak ditemukan',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: _filteredAlatList.length,
+                            itemBuilder: (context, index) {
+                              final alat = _filteredAlatList[index];
+                              final bool isAvailable =
+                                  alat['stok_tersedia'] > 0;
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 14),
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1F4F6F),
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.18),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
                                     ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      _searchController.text.isEmpty
-                                          ? 'Belum ada alat'
-                                          : 'Alat tidak ditemukan',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        color: Colors.grey[600],
-                                        fontWeight: FontWeight.w500,
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Icon dengan status visual
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.build_circle_outlined,
+                                        color: isAvailable
+                                            ? Colors.white70
+                                            : Colors.white38,
+                                        size: 28,
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 15),
+
+                                    // INFO
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            alat['nama_alat'],
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Kode: ${alat['kode_alat']}',
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white60,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'Stok: ${alat['stok_tersedia']}/${alat['stok_total']}',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white70,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: isAvailable
+                                                      ? Colors.green
+                                                            .withOpacity(0.3)
+                                                      : Colors.red.withOpacity(
+                                                          0.3,
+                                                        ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  isAvailable
+                                                      ? 'Tersedia'
+                                                      : 'Habis',
+                                                  style: GoogleFonts.poppins(
+                                                    color: isAvailable
+                                                        ? Colors.greenAccent
+                                                        : Colors.redAccent,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      alat['kondisi'] == 'baik'
+                                                      ? Colors.blue.withOpacity(
+                                                          0.3,
+                                                        )
+                                                      : Colors.orange
+                                                            .withOpacity(0.3),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  alat['kondisi']
+                                                      .toString()
+                                                      .toUpperCase(),
+                                                  style: GoogleFonts.poppins(
+                                                    color:
+                                                        alat['kondisi'] ==
+                                                            'baik'
+                                                        ? Colors.lightBlueAccent
+                                                        : Colors.orangeAccent,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              )
-                            : ListView.builder(
-                                itemCount: _filteredAlatList.length,
-                                itemBuilder: (context, index) {
-                                  final alat = _filteredAlatList[index];
-                                  final bool isAvailable = alat['stok_tersedia'] > 0;
-
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 14),
-                                    padding: const EdgeInsets.all(18),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1F4F6F),
-                                      borderRadius: BorderRadius.circular(18),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.18),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        // Icon dengan status visual
-                                        Container(
-                                          width: 50,
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Icon(
-                                            Icons.build_circle_outlined,
-                                            color: isAvailable
-                                                ? Colors.white70
-                                                : Colors.white38,
-                                            size: 28,
-                                          ),
-                                        ),
-
-                                        const SizedBox(width: 15),
-
-                                        // INFO
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                alat['nama_alat'],
-                                                style: GoogleFonts.poppins(
-                                                  color: Colors.white,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Kode: ${alat['kode_alat']}',
-                                                style: GoogleFonts.poppins(
-                                                  color: Colors.white60,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 6),
-                                              Row(
-                                                children: [
-                                                  Text(
-                                                    'Stok: ${alat['stok_tersedia']}/${alat['stok_total']}',
-                                                    style: GoogleFonts.poppins(
-                                                      color: Colors.white70,
-                                                      fontSize: 13,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: isAvailable
-                                                          ? Colors.green.withOpacity(0.3)
-                                                          : Colors.red.withOpacity(0.3),
-                                                      borderRadius:
-                                                          BorderRadius.circular(8),
-                                                    ),
-                                                    child: Text(
-                                                      isAvailable ? 'Tersedia' : 'Habis',
-                                                      style: GoogleFonts.poppins(
-                                                        color: isAvailable
-                                                            ? Colors.greenAccent
-                                                            : Colors.redAccent,
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: alat['kondisi'] == 'baik'
-                                                          ? Colors.blue.withOpacity(0.3)
-                                                          : Colors.orange.withOpacity(0.3),
-                                                      borderRadius:
-                                                          BorderRadius.circular(8),
-                                                    ),
-                                                    child: Text(
-                                                      alat['kondisi'].toString().toUpperCase(),
-                                                      style: GoogleFonts.poppins(
-                                                        color: alat['kondisi'] == 'baik'
-                                                            ? Colors.lightBlueAccent
-                                                            : Colors.orangeAccent,
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),

@@ -4,9 +4,7 @@ import '../models/member_models.dart';
 class MemberService {
   final SupabaseClient supabase = Supabase.instance.client;
 
-  // =====================================
   // GET ALL MEMBERS
-  // =====================================
   Future<List<MemberModel>> getAllMembers() async {
     try {
       final List<Map<String, dynamic>> response = await supabase
@@ -31,9 +29,8 @@ class MemberService {
     }
   }
 
-  // =====================================
+
   // CREATE MEMBER
-  // =====================================
   Future<Map<String, dynamic>> createMember({
     required String email,
     required String password,
@@ -58,10 +55,7 @@ class MemberService {
 
       final User? user = authResponse.user;
       if (user == null) {
-        return {
-          'success': false,
-          'message': 'Gagal membuat akun autentikasi',
-        };
+        return {'success': false, 'message': 'Gagal membuat akun autentikasi'};
       }
 
       // Insert ke tabel users
@@ -71,12 +65,9 @@ class MemberService {
         'role': role.toLowerCase(),
       });
 
-      print('✅ Member created: $username (${role.toLowerCase()})');
+      print('Member created: $username (${role.toLowerCase()})');
 
-      return {
-        'success': true,
-        'message': 'Member berhasil ditambahkan',
-      };
+      return {'success': true, 'message': 'Member berhasil ditambahkan'};
     } on AuthException catch (e) {
       String errorMessage = 'Gagal membuat akun';
 
@@ -90,73 +81,51 @@ class MemberService {
         errorMessage = e.message;
       }
 
-      return {
-        'success': false,
-        'message': errorMessage,
-      };
+      return {'success': false, 'message': errorMessage};
     } catch (e) {
       print('❌ Create member error: $e');
-      return {
-        'success': false,
-        'message': 'Terjadi kesalahan: $e',
-      };
+      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
     }
   }
 
-  // =====================================
+
   // UPDATE MEMBER
-  // =====================================
   Future<Map<String, dynamic>> updateMember({
     required String userId,
     required String username,
     required String role,
   }) async {
     try {
-      await supabase.from('users').update({
-        'username': username,
-        'role': role.toLowerCase(),
-      }).eq('id_user', userId);
+      await supabase
+          .from('users')
+          .update({'username': username, 'role': role.toLowerCase()})
+          .eq('id_user', userId);
 
       print('✅ Member updated: $username → ${role.toLowerCase()}');
 
-      return {
-        'success': true,
-        'message': 'Member berhasil diupdate',
-      };
+      return {'success': true, 'message': 'Member berhasil diupdate'};
     } catch (e) {
       print('❌ Update error: $e');
-      return {
-        'success': false,
-        'message': 'Gagal update member: $e',
-      };
+      return {'success': false, 'message': 'Gagal update member: $e'};
     }
   }
 
-  // =====================================
+
   // DELETE MEMBER
-  // =====================================
   Future<Map<String, dynamic>> deleteMember(String userId) async {
     try {
       await supabase.from('users').delete().eq('id_user', userId);
 
       print('✅ Member deleted: $userId');
 
-      return {
-        'success': true,
-        'message': 'Member berhasil dihapus',
-      };
+      return {'success': true, 'message': 'Member berhasil dihapus'};
     } catch (e) {
       print('❌ Delete error: $e');
-      return {
-        'success': false,
-        'message': 'Gagal menghapus member: $e',
-      };
+      return {'success': false, 'message': 'Gagal menghapus member: $e'};
     }
   }
 
-  // =====================================
   // CHECK USERNAME EXISTS
-  // =====================================
   Future<bool> _checkUsernameExists(String username) async {
     try {
       final Map<String, dynamic>? response = await supabase
@@ -171,9 +140,8 @@ class MemberService {
     }
   }
 
-  // =====================================
+
   // ROLE CONVERTER (DISPLAY → DATABASE)
-  // =====================================
   String roleToDatabase(String displayRole) {
     switch (displayRole) {
       case 'Admin':

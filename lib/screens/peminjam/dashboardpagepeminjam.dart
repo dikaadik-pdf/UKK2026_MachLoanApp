@@ -7,7 +7,6 @@ import 'package:ukk2026_machloanapp/screens/peminjam/alatscreen_peminjam.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/detailpeminjaman_peminjam.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 
-
 class DashboardScreenPeminjam extends StatefulWidget {
   final String username;
 
@@ -19,14 +18,14 @@ class DashboardScreenPeminjam extends StatefulWidget {
 }
 
 class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
-  // ✅ Data dari database (bukan hardcoded)
+  // Data dari database (bukan hardcoded)
   int totalAlat = 0;
   int alatTersedia = 0;
   int alatDipinjam = 0;
   List<Map<String, dynamic>> weeklyData = [];
   bool isLoading = true;
 
-  // ✅ Realtime channel references
+  // Realtime channel references
   RealtimeChannel? _alatChannel;
   RealtimeChannel? _peminjamanChannel;
 
@@ -39,7 +38,7 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
 
   @override
   void dispose() {
-    // ✅ Unsubscribe semua channel saat widget di-dispose
+    // Unsubscribe semua channel saat widget di-dispose
     if (_alatChannel != null) {
       SupabaseServices.unsubscribeChannel(_alatChannel!);
     }
@@ -78,7 +77,7 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
 
   // ===== REALTIME SUBSCRIPTION =====
   void _subscribeRealtime() {
-    // ✅ Listen perubahan tabel 'alat' → update stat cards
+    // Listen perubahan tabel 'alat' → update stat cards
     _alatChannel = SupabaseServices.subscribeToDashboardAlat((statsData) {
       if (mounted) {
         setState(() {
@@ -89,8 +88,10 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
       }
     });
 
-    // ✅ Listen perubahan tabel 'peminjaman' & 'detail_peminjaman' → update chart
-    _peminjamanChannel = SupabaseServices.subscribeToDashboardPeminjaman((chartData) {
+    // Listen perubahan tabel 'peminjaman' & 'detail_peminjaman' → update chart
+    _peminjamanChannel = SupabaseServices.subscribeToDashboardPeminjaman((
+      chartData,
+    ) {
       if (mounted) {
         setState(() {
           weeklyData = chartData;
@@ -147,10 +148,12 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                   ),
                   Builder(
                     builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu,
-                          color: Colors.white, size: 34),
-                      onPressed: () =>
-                          Scaffold.of(context).openEndDrawer(),
+                      icon: const Icon(
+                        Icons.menu,
+                        color: Colors.white,
+                        size: 34,
+                      ),
+                      onPressed: () => Scaffold.of(context).openEndDrawer(),
                     ),
                   ),
                 ],
@@ -172,7 +175,10 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                               children: [
                                 _buildStatCard('Total\nAlat', '$totalAlat'),
                                 const SizedBox(width: 12),
-                                _buildStatCard('Alat\nTersedia', '$alatTersedia'),
+                                _buildStatCard(
+                                  'Alat\nTersedia',
+                                  '$alatTersedia',
+                                ),
                                 const SizedBox(width: 12),
                                 _buildStatCard('Dipinjam', '$alatDipinjam'),
                               ],
@@ -257,8 +263,7 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFF2F3A40),
               borderRadius: BorderRadius.circular(20),
@@ -310,8 +315,7 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
         alignment: Alignment.topRight,
         child: Container(
           width: 280,
-          margin:
-              const EdgeInsets.only(top: 40, right: 20, bottom: 40),
+          margin: const EdgeInsets.only(top: 40, right: 20, bottom: 40),
           decoration: BoxDecoration(
             color: const Color(0xFF769DCB),
             borderRadius: BorderRadius.circular(25),
@@ -332,7 +336,11 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -340,7 +348,10 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
 
               // ===== USER PROFILE SECTION =====
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Column(
                   children: [
                     Container(
@@ -368,7 +379,10 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                     ),
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
@@ -391,17 +405,19 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
               const SizedBox(height: 10),
 
               // ===== MENU ITEMS =====
-              _buildSidebarItem(Icons.dashboard, 'Dashboard',
-                  () => Navigator.pop(context)),
+              _buildSidebarItem(
+                Icons.dashboard,
+                'Dashboard',
+                () => Navigator.pop(context),
+              ),
 
               _buildSidebarItem(Icons.build, 'Alat', () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => AlatScreenPeminjam(
-                      username: widget.username,
-                    ),
+                    builder: (_) =>
+                        AlatScreenPeminjam(username: widget.username),
                   ),
                 );
               }),
@@ -411,9 +427,8 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => PeminjamanPeminjamScreen(
-                      username: widget.username,
-                    ),
+                    builder: (_) =>
+                        PeminjamanPeminjamScreen(username: widget.username),
                   ),
                 );
               }),
@@ -422,8 +437,7 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (_) => const AccountScreen()),
+                  MaterialPageRoute(builder: (_) => const AccountScreen()),
                 );
               }),
 
@@ -435,13 +449,11 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
     );
   }
 
-  Widget _buildSidebarItem(
-      IconData icon, String title, VoidCallback onTap) {
+  Widget _buildSidebarItem(IconData icon, String title, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
           children: [
             Icon(icon, color: Colors.white, size: 22),
@@ -516,9 +528,9 @@ class _DashboardScreenPeminjamState extends State<DashboardScreenPeminjam> {
   }
 
   FlGridData _buildChartGrid() => FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        getDrawingHorizontalLine: (v) =>
-            FlLine(color: Colors.white10, strokeWidth: 1, dashArray: [5, 5]),
-      );
+    show: true,
+    drawVerticalLine: false,
+    getDrawingHorizontalLine: (v) =>
+        FlLine(color: Colors.white10, strokeWidth: 1, dashArray: [5, 5]),
+  );
 }

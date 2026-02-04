@@ -25,7 +25,7 @@ class SplashScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           Positioned(
             bottom: -20,
             left: -20,
@@ -39,7 +39,7 @@ class SplashScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -49,9 +49,9 @@ class SplashScreen extends StatelessWidget {
                   width: 170,
                   height: 170,
                 ),
-                
+
                 const SizedBox(height: 10),
-                
+
                 ElevatedButton(
                   onPressed: () {
                     showDialog(
@@ -65,9 +65,9 @@ class SplashScreen extends StatelessWidget {
                         );
                       },
                     );
-                    
+
                     Future.delayed(const Duration(seconds: 2), () {
-                      Navigator.of(context).pop(); 
+                      Navigator.of(context).pop();
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
                           builder: (context) => const LoginScreen(),

@@ -22,7 +22,9 @@ class TambahAlatDialog extends StatefulWidget {
 class _TambahAlatDialogState extends State<TambahAlatDialog> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _stockController = TextEditingController();
-  final TextEditingController _dendaController = TextEditingController(text: '0');
+  final TextEditingController _dendaController = TextEditingController(
+    text: '0',
+  );
   String _kondisi = 'baik';
   bool _isLoading = false;
 
@@ -52,7 +54,8 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Konfirmasi',
-        subtitle: 'Yakin ingin menambahkan alat "${_namaController.text.trim()}"?',
+        subtitle:
+            'Yakin ingin menambahkan alat "${_namaController.text.trim()}"?',
         onBack: () => Navigator.pop(context, false),
         onContinue: () => Navigator.pop(context, true),
       ),
@@ -124,64 +127,68 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              Text(
-                "Tambah Alat",
-                style: GoogleFonts.poppins(
-                  fontSize: 27,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
+                Text(
+                  "Tambah Alat",
+                  style: GoogleFonts.poppins(
+                    fontSize: 27,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // Input Nama Alat
-              _buildField("Nama Alat", _namaController, hint: "Contoh: Gergaji Listrik"),
-              const SizedBox(height: 14),
+                // Input Nama Alat
+                _buildField(
+                  "Nama Alat",
+                  _namaController,
+                  hint: "Contoh: Gergaji Listrik",
+                ),
+                const SizedBox(height: 14),
 
-              // Input Stok Total
-              _buildField(
-                "Stok Total",
-                _stockController,
-                keyboardType: TextInputType.number,
-                hint: "Contoh: 10",
-              ),
-              const SizedBox(height: 14),
+                // Input Stok Total
+                _buildField(
+                  "Stok Total",
+                  _stockController,
+                  keyboardType: TextInputType.number,
+                  hint: "Contoh: 10",
+                ),
+                const SizedBox(height: 14),
 
-              // Dropdown Kondisi
-              _buildKondisiDropdown(),
-              const SizedBox(height: 14),
+                // Dropdown Kondisi
+                _buildKondisiDropdown(),
+                const SizedBox(height: 14),
 
-              // Input Denda Per Hari
-              _buildField(
-                "Denda Per Hari (Rp)",
-                _dendaController,
-                keyboardType: TextInputType.number,
-                hint: "Contoh: 5000",
-              ),
+                // Input Denda Per Hari
+                _buildField(
+                  "Denda Per Hari (Rp)",
+                  _dendaController,
+                  keyboardType: TextInputType.number,
+                  hint: "Contoh: 5000",
+                ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: _actionButton(
-                      "Kembali",
-                      const Color(0xFF6B7280),
-                      _isLoading ? null : () => Navigator.pop(context),
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: _actionButton(
+                        "Kembali",
+                        const Color(0xFF6B7280),
+                        _isLoading ? null : () => Navigator.pop(context),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _actionButton(
-                      "Simpan",
-                      const Color(0xFF2F3A40),
-                      _isLoading ? null : _handleSave,
-                      isLoading: _isLoading,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _actionButton(
+                        "Simpan",
+                        const Color(0xFF2F3A40),
+                        _isLoading ? null : _handleSave,
+                        isLoading: _isLoading,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               ],
             ),
           ),

@@ -17,7 +17,7 @@ class AlatScreenPetugas extends StatefulWidget {
 class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
   final TextEditingController _searchController = TextEditingController();
 
-  // 🔥 PENTING: pisahkan data asli & data tampil
+
   List<Map<String, dynamic>> _allKategoriList = [];
   List<Map<String, dynamic>> _kategoriList = [];
 
@@ -55,9 +55,7 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     super.dispose();
   }
 
-  // =========================
   // REALTIME
-  // =========================
   void _setupRealtimeSubscription() {
     _kategoriChannel = SupabaseServices.subscribeToKategori((data) {
       if (!mounted) return;
@@ -68,9 +66,8 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     });
   }
 
-  // =========================
+
   // LOAD DATA
-  // =========================
   Future<void> _loadKategori() async {
     try {
       setState(() => _loading = true);
@@ -86,17 +83,12 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
 
-  // =========================
-  // SEARCH KATEGORI ✅
-  // =========================
+  // SEARCH KATEGORI 
   void _searchKategori(String query) {
     final lowerQuery = query.toLowerCase();
 
@@ -105,17 +97,15 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
         _kategoriList = _allKategoriList;
       } else {
         _kategoriList = _allKategoriList.where((kategori) {
-          final nama =
-              kategori['nama_kategori'].toString().toLowerCase();
+          final nama = kategori['nama_kategori'].toString().toLowerCase();
           return nama.contains(lowerQuery);
         }).toList();
       }
     });
   }
 
-  // =========================
+
   // ICON HELPER
-  // =========================
   IconData _getIconForKategori(String namaKategori) {
     final lowerName = namaKategori.toLowerCase();
 
@@ -132,9 +122,7 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     return _iconMap['default']!;
   }
 
-  // =========================
   // UI
-  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,9 +170,7 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
           Expanded(
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF1F4F6F),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFF1F4F6F)),
                   )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
@@ -237,29 +223,28 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
                               )
                             : GridView.builder(
                                 shrinkWrap: true,
-                                physics:
-                                    const NeverScrollableScrollPhysics(),
+                                physics: const NeverScrollableScrollPhysics(),
                                 gridDelegate:
                                     const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 20,
-                                  mainAxisSpacing: 20,
-                                ),
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 20,
+                                      mainAxisSpacing: 20,
+                                    ),
                                 itemCount: _kategoriList.length,
                                 itemBuilder: (context, index) {
                                   final kategori = _kategoriList[index];
                                   return _buildCategoryCard(
                                     context,
                                     _getIconForKategori(
-                                        kategori['nama_kategori']),
+                                      kategori['nama_kategori'],
+                                    ),
                                     kategori['nama_kategori'],
                                     () => Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => AlatListPetugas(
                                           username: widget.username,
-                                          idKategori:
-                                              kategori['id_kategori'],
+                                          idKategori: kategori['id_kategori'],
                                           namaKategori:
                                               kategori['nama_kategori'],
                                         ),
@@ -277,9 +262,8 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     );
   }
 
-  // =========================
+ 
   // CARD
-  // =========================
   Widget _buildCategoryCard(
     BuildContext context,
     IconData icon,

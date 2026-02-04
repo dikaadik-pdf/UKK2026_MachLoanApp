@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/filter_widgets.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -11,10 +13,7 @@ import 'package:printing/printing.dart';
 class LaporanPage extends StatefulWidget {
   final String username;
 
-  const LaporanPage({
-    super.key,
-    required this.username,
-  });
+  const LaporanPage({super.key, required this.username});
 
   @override
   State<LaporanPage> createState() => _LaporanPageState();
@@ -26,12 +25,30 @@ class _LaporanPageState extends State<LaporanPage> {
   List<Map<String, dynamic>> laporanData = [];
   int totalAlat = 0;
   bool _localeInitialized = false;
+  RealtimeChannel? _realtimeChannel;
 
   @override
   void initState() {
     super.initState();
     _initializeLocale();
     _loadLaporan();
+    _setupRealtimeSubscription();
+  }
+
+  @override
+  void dispose() {
+    if (_realtimeChannel != null) {
+      SupabaseServices.unsubscribeChannel(_realtimeChannel!);
+    }
+    super.dispose();
+  }
+
+  void _setupRealtimeSubscription() {
+    _realtimeChannel = SupabaseServices.subscribeToLaporan(() {
+      if (mounted) {
+        _loadLaporan();
+      }
+    });
   }
 
   Future<void> _initializeLocale() async {
@@ -86,12 +103,12 @@ class _LaporanPageState extends State<LaporanPage> {
 
       if (!mounted) return;
 
-      // ✅ Sort di sini — tanggal_pinjam terbaru di atas (descending)
+      // Sort di sini — tanggal_pinjam terbaru di atas (descending)
       data.sort((a, b) {
         final dateA = _parseDate(a['tanggal_pinjam']);
         final dateB = _parseDate(b['tanggal_pinjam']);
         if (dateA == null && dateB == null) return 0;
-        if (dateA == null) return 1;   // null taruh di bawah
+        if (dateA == null) return 1; // null taruh di bawah
         if (dateB == null) return -1;
         return dateB.compareTo(dateA); // descending = terbaru di atas
       });
@@ -197,10 +214,7 @@ class _LaporanPageState extends State<LaporanPage> {
 
             pw.Text(
               'Detail Peminjaman',
-              style: pw.TextStyle(
-                fontSize: 14,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 8),
 
@@ -233,7 +247,9 @@ class _LaporanPageState extends State<LaporanPage> {
                   final index = entry.key;
                   final item = entry.value;
                   final detailList = item['detail_peminjaman'] as List;
-                  final detail = detailList.isNotEmpty ? detailList.first : null;
+                  final detail = detailList.isNotEmpty
+                      ? detailList.first
+                      : null;
                   final alat = detail?['alat'];
 
                   return pw.TableRow(
@@ -337,8 +353,11 @@ class _LaporanPageState extends State<LaporanPage> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 5),
@@ -359,26 +378,19 @@ class _LaporanPageState extends State<LaporanPage> {
               padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
               child: Column(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    height: 60,
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1F4F6F),
-                      borderRadius: BorderRadius.circular(35),
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          _buildFilterButton('Semua'),
-                          _buildFilterButton('Hari Ini'),
-                          _buildFilterButton('Minggu Ini'),
-                          _buildFilterButton('Sebulan Ini'),
-                        ],
-                      ),
-                    ),
+                  // Filter Bar menggunakan CustomFilterBar
+                  CustomFilterBar(
+                    filters: const [
+                      'Semua',
+                      'Hari Ini',
+                      'Minggu Ini',
+                      'Sebulan Ini',
+                    ],
+                    initialFilter: selectedFilter,
+                    onFilterSelected: (filter) {
+                      setState(() => selectedFilter = filter);
+                      _loadLaporan();
+                    },
                   ),
                   const SizedBox(height: 25),
                   Container(
@@ -395,8 +407,11 @@ class _LaporanPageState extends State<LaporanPage> {
                     ),
                     child: ElevatedButton.icon(
                       onPressed: isLoading ? null : _printLaporan,
-                      icon: const Icon(Icons.print,
-                          color: Colors.white, size: 30),
+                      icon: const Icon(
+                        Icons.print,
+                        color: Colors.white,
+                        size: 30,
+                      ),
                       label: Text(
                         "Print",
                         style: GoogleFonts.poppins(
@@ -445,7 +460,8 @@ class _LaporanPageState extends State<LaporanPage> {
                         ),
                         isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                color: Colors.white,
+                              )
                             : Text(
                                 "$totalAlat Item",
                                 style: GoogleFonts.poppins(
@@ -494,8 +510,9 @@ class _LaporanPageState extends State<LaporanPage> {
                   else
                     ...laporanData.map((item) {
                       final detailList = item['detail_peminjaman'] as List;
-                      final detail =
-                          detailList.isNotEmpty ? detailList.first : null;
+                      final detail = detailList.isNotEmpty
+                          ? detailList.first
+                          : null;
                       final alat = detail?['alat'];
 
                       return _buildToolItem(
@@ -509,34 +526,6 @@ class _LaporanPageState extends State<LaporanPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterButton(String title) {
-    bool isSelected = selectedFilter == title;
-    return GestureDetector(
-      onTap: () {
-        setState(() => selectedFilter = title);
-        _loadLaporan();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Text(
-          title,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
       ),
     );
   }
@@ -564,12 +553,14 @@ class _LaporanPageState extends State<LaporanPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Tanggal Dipinjam : $dateOut",
-                  style: GoogleFonts.poppins(
-                      color: Colors.white70, fontSize: 10)),
-              Text("Estimasi Kembali: $dateIn",
-                  style: GoogleFonts.poppins(
-                      color: Colors.white70, fontSize: 10)),
+              Text(
+                "Tanggal Dipinjam : $dateOut",
+                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10),
+              ),
+              Text(
+                "Estimasi Kembali: $dateIn",
+                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10),
+              ),
             ],
           ),
         ],

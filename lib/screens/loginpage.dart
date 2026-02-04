@@ -152,11 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SizedBox(
               height: MediaQuery.of(context).size.height,
               child: Column(
-                children: [
-                  _buildHeader(),
-                  const Spacer(),
-                  _buildForm(),
-                ],
+                children: [_buildHeader(), const Spacer(), _buildForm()],
               ),
             ),
           ),
@@ -231,7 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
               _buildLabel('Email'),
               _buildInput(
                 controller: _emailController,
-                hint: 'Masukkan Emailmu Disini!',
+                hint: 'Masukkan Emailmu!',
                 fieldName: 'email',
                 validator: _validateEmail,
               ),
@@ -239,18 +235,15 @@ class _LoginScreenState extends State<LoginScreen> {
               _buildLabel('Password'),
               _buildInput(
                 controller: _passwordController,
-                hint: 'Masukkan Passwordmu Disini!',
+                hint: 'Masukkan Passwordmu!',
                 fieldName: 'password',
                 obscure: _obscurePassword,
-                validator: (value) =>
-                    value == null || value.isEmpty
-                        ? 'Masukkan Password Kamu Ya!'
-                        : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Masukkan Password Kamu Ya!'
+                    : null,
                 suffix: IconButton(
                   icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off
-                        : Icons.visibility,
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
                     color: Colors.white70,
                   ),
                   onPressed: () =>
@@ -314,20 +307,19 @@ class _LoginScreenState extends State<LoginScreen> {
     bool obscure = false,
     Widget? suffix,
   }) {
-    // Cek apakah error boleh ditampilkan:
-    // - Sudah pernah klik tombol Login (_isSubmitted), atau
-    // - Field ini sudah pernah di-tap (_touchedFields)
-    final bool showError =
-        _isSubmitted || _touchedFields.contains(fieldName);
 
-    final String? errorText = showError ? validator?.call(controller.text) : null;
+    final bool showError = _isSubmitted || _touchedFields.contains(fieldName);
+
+    final String? errorText = showError
+        ? validator?.call(controller.text)
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: double.infinity,
-          constraints: const BoxConstraints(maxWidth: 335),
+          constraints: const BoxConstraints(maxWidth:1820),
           height: 60,
           margin: const EdgeInsets.only(top: 10),
           decoration: BoxDecoration(
@@ -358,8 +350,10 @@ class _LoginScreenState extends State<LoginScreen> {
               hintStyle: GoogleFonts.poppins(color: Colors.white60),
               border: InputBorder.none,
               errorStyle: const TextStyle(height: 0, fontSize: 0),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 25,
+                vertical: 18,
+              ),
               suffixIcon: suffix == null
                   ? null
                   : Padding(

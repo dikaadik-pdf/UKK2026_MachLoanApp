@@ -15,9 +15,9 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
+
   final MemberService _memberService = MemberService();
-  
+
   String _selectedRole = 'Admin';
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -46,7 +46,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Konfirmasi',
-        subtitle: 'Yakin ingin menambahkan anggota baru "${_nameController.text.trim()}" sebagai $_selectedRole?',
+        subtitle: 'Yakin ingin menambahkan anggota baru?',
         onBack: () => Navigator.pop(context, false),
         onContinue: () => Navigator.pop(context, true),
       ),
@@ -76,7 +76,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
             onOk: () => Navigator.pop(context),
           ),
         );
-        
+
         // Tutup dialog utama dan kirim result
         if (mounted) {
           Navigator.pop(context, result);
@@ -135,7 +135,11 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
               const SizedBox(height: 14),
 
               // Input Email
-              _buildField("Email", _emailController, keyboardType: TextInputType.emailAddress),
+              _buildField(
+                "Email",
+                _emailController,
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 14),
 
               // Input Password
@@ -149,7 +153,8 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                     color: Colors.white70,
                     size: 20,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
               const SizedBox(height: 14),
@@ -218,7 +223,10 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 12,
+              ),
               suffixIcon: suffix,
             ),
           ),
@@ -255,10 +263,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
               icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
               style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
               items: ['Admin', 'Petugas', 'Peminjam'].map((role) {
-                return DropdownMenuItem(
-                  value: role,
-                  child: Text(role),
-                );
+                return DropdownMenuItem(value: role, child: Text(role));
               }).toList(),
               onChanged: (value) {
                 if (value != null) {

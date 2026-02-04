@@ -16,10 +16,7 @@ class AuthService {
 
       final user = response.user;
       if (user == null) {
-        return {
-          'success': false,
-          'message': 'Email atau password salah',
-        };
+        return {'success': false, 'message': 'Email atau password salah'};
       }
 
       final userData = await supabase
@@ -35,20 +32,11 @@ class AuthService {
         };
       }
 
-      return {
-        'success': true,
-        'user': UserModel.fromJson(userData),
-      };
+      return {'success': true, 'user': UserModel.fromJson(userData)};
     } on AuthException catch (e) {
-      return {
-        'success': false,
-        'message': e.message,
-      };
+      return {'success': false, 'message': e.message};
     } catch (e) {
-      return {
-        'success': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'message': e.toString()};
     }
   }
 

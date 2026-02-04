@@ -39,7 +39,9 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     super.initState();
     _namaController = TextEditingController(text: widget.namaAlat);
     _stockController = TextEditingController(text: widget.stock.toString());
-    _dendaController = TextEditingController(text: widget.dendaPerHari.toString());
+    _dendaController = TextEditingController(
+      text: widget.dendaPerHari.toString(),
+    );
     _kondisi = widget.kondisi;
   }
 

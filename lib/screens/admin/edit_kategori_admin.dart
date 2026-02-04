@@ -5,20 +5,31 @@ import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 
-class TambahKategoriDialog extends StatefulWidget {
-  final String username;
+class EditKategoriDialog extends StatefulWidget {
+  final Map<String, dynamic> kategori;
 
-  const TambahKategoriDialog({Key? key, required this.username})
+  const EditKategoriDialog({Key? key, required this.kategori})
     : super(key: key);
 
   @override
-  State<TambahKategoriDialog> createState() => _TambahKategoriDialogState();
+  State<EditKategoriDialog> createState() => _EditKategoriDialogState();
 }
 
-class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
-  final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _prefixController = TextEditingController();
+class _EditKategoriDialogState extends State<EditKategoriDialog> {
+  late TextEditingController _namaController;
+  late TextEditingController _prefixController;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _namaController = TextEditingController(
+      text: widget.kategori['nama_kategori'] ?? '',
+    );
+    _prefixController = TextEditingController(
+      text: widget.kategori['prefix_kode'] ?? '',
+    );
+  }
 
   @override
   void dispose() {
@@ -91,55 +102,54 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
         child: Container(
           width: 345,
           constraints: const BoxConstraints(minHeight: 480),
-          padding: const EdgeInsets.symmetric(vertical: 30),
+          padding: const EdgeInsets.symmetric(vertical: 35, horizontal: 20),
           decoration: BoxDecoration(
             color: const Color(0xFF769DCB),
             borderRadius: BorderRadius.circular(30),
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "Tambah Kategori",
-                  style: GoogleFonts.poppins(
-                    fontSize: 25,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Edit Kategori",
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 35),
+
+              _label("Nama Kategori"),
+              _inputField(_namaController, hint: "Contoh: Alat Mesin"),
+
+              const SizedBox(height: 25),
+              _label("Kode Kategori"),
+              _inputField(
+                _prefixController,
+                hint: "Contoh: TMAT",
+                uppercase: true,
+              ),
+
+              const SizedBox(height: 120),
+
+              // TOMBOL AKSI
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _actionButton("Kembali", const Color(0xFF7E7E7E), () {
+                    Navigator.pop(context);
+                  }),
+                  const SizedBox(width: 20),
+                  _actionButton(
+                    _loading ? "..." : "Simpan",
+                    const Color(0xFF2C3E50),
+                    _loading ? () {} : _handleUpdate,
                   ),
-                ),
-                const SizedBox(height: 30),
-
-                _label("Nama Kategori"),
-                _inputField(_namaController, hint: "Contoh: Alat Mesin"),
-
-                const SizedBox(height: 20),
-                _label("Kode Kategori"),
-                _inputField(
-                  _prefixController,
-                  hint: "Contoh: TMAT",
-                  uppercase: true,
-                ),
-
-                const SizedBox(height: 120),
-
-                // TOMBOL AKSI
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _actionButton("Kembali", const Color(0xFF7E7E7E), () {
-                      Navigator.pop(context);
-                    }),
-                    const SizedBox(width: 20),
-                    _actionButton(
-                      _loading ? "..." : "Simpan",
-                      const Color(0xFF2C3E50),
-                      _loading ? () {} : _handleSave,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -168,7 +178,7 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
     );
   }
 
-  void _handleSave() async {
+  void _handleUpdate() async {
     // Validasi
     if (_namaController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -200,12 +210,12 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
       return;
     }
 
-    // Tampilkan konfirmasi sebelum simpan
+    // Tampilkan konfirmasi sebelum update
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Beneran?',
-        subtitle: 'Apakah Kamu Yakin Menambah Kategori Ini?',
+        subtitle: 'Apakah Kamu Yakin Mengubah Kategori Ini?',
         onBack: () => Navigator.pop(context, false),
         onContinue: () => Navigator.pop(context, true),
       ),
@@ -216,7 +226,8 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
     setState(() => _loading = true);
 
     try {
-      await SupabaseServices.tambahKategori(
+      await SupabaseServices.updateKategori(
+        idKategori: widget.kategori['id_kategori'],
         namaKategori: _namaController.text.trim(),
         prefixKode: _prefixController.text.trim().toUpperCase(),
       );
@@ -227,7 +238,7 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
           context: context,
           builder: (context) => SuccessDialog(
             title: 'Yeay...!',
-            subtitle: 'Kategori yang Kamu Mau Berhasil Ditambahkan',
+            subtitle: 'Kategori Berhasil Diperbarui',
             onOk: () => Navigator.pop(context),
           ),
         );
@@ -241,7 +252,7 @@ class _TambahKategoriDialogState extends State<TambahKategoriDialog> {
       if (mounted) {
         setState(() => _loading = false);
 
-        String errorMessage = 'Gagal menambah kategori';
+        String errorMessage = 'Gagal mengupdate kategori';
         if (e.toString().contains('duplicate')) {
           errorMessage = 'Nama kategori atau prefix sudah digunakan';
         }

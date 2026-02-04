@@ -28,8 +28,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
   DateTime? tanggalPinjam;
   bool _isSubmitting = false;
 
-  DateTime? get tanggalKembali =>
-      tanggalPinjam?.add(const Duration(days: 5));
+  DateTime? get tanggalKembali => tanggalPinjam?.add(const Duration(days: 5));
 
   final DateFormat formatter = DateFormat('d MMM yyyy');
 
@@ -63,7 +62,9 @@ class _PinjamAlatState extends State<PinjamAlat> {
 
     try {
       // Get user ID dari username
-      final idUser = await SupabaseServices.getUserIdByUsername(widget.username);
+      final idUser = await SupabaseServices.getUserIdByUsername(
+        widget.username,
+      );
 
       // Create peminjaman
       await SupabaseServices.createPeminjaman(
@@ -89,10 +90,9 @@ class _PinjamAlatState extends State<PinjamAlat> {
           },
         ),
       );
-
     } catch (e) {
       if (!mounted) return;
-      
+
       showDialog(
         context: context,
         builder: (_) => SuccessDialog(
@@ -217,12 +217,17 @@ class _PinjamAlatState extends State<PinjamAlat> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
-                  Text("Denda Keterlambatan",
-                      style: TextStyle(color: Colors.white)),
-                  Text("5000/hari",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    "Denda Keterlambatan",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    "5000/hari",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
 
@@ -275,16 +280,17 @@ class _PinjamAlatState extends State<PinjamAlat> {
   Widget _counterBtn({required IconData icon, VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
-      child: Icon(
-        icon,
-        color: onTap == null ? Colors.white30 : Colors.white,
-      ),
+      child: Icon(icon, color: onTap == null ? Colors.white30 : Colors.white),
     );
   }
 
   // ===== ROW TANGGAL =====
-  Widget _row(String label, String value,
-      {VoidCallback? onTap, bool enabled = true}) {
+  Widget _row(
+    String label,
+    String value, {
+    VoidCallback? onTap,
+    bool enabled = true,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -299,8 +305,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_month,
-                    color: Colors.white, size: 16),
+                const Icon(Icons.calendar_month, color: Colors.white, size: 16),
                 const SizedBox(width: 6),
                 Text(
                   value,

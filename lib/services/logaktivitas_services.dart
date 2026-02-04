@@ -1,126 +1,118 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk2026_machloanapp/models/logaktivitas_models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LogAktivitasService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient _client = Supabase.instance.client;
 
-  /// Mengambil semua log aktivitas dari database
+  /// Mendapatkan semua log aktivitas (untuk kompatibilitas)
   Future<List<LogAktivitasModel>> getAllLogs() async {
     try {
-      final response = await _supabase
-          .from('vw_log_aktivitas')
-          .select()
+      final response = await _client
+          .from('log_aktivitas')
+          .select('''
+            id_log,
+            id_user,
+            aktivitas,
+            waktu_aktivitas,
+            users!inner(
+              username,
+              role
+            )
+          ''')
           .order('waktu_aktivitas', ascending: false);
 
-      return (response as List)
-          .map((log) => LogAktivitasModel.fromJson(log))
-          .toList();
+      return (response as List).map<LogAktivitasModel>((log) {
+        final logData = log as Map<String, dynamic>;
+        
+        // Debug print untuk melihat struktur data
+        print('Raw log data: $logData');
+        
+        return LogAktivitasModel.fromJson(logData);
+      }).toList();
     } catch (e) {
-      print('Error fetching logs: $e');
-      throw Exception('Gagal mengambil data log aktivitas');
+      print('Error detail: $e');
+      throw Exception('Gagal memuat log aktivitas: $e');
     }
   }
 
-  /// Mencari log aktivitas berdasarkan query
-  Future<List<LogAktivitasModel>> searchLogs(String query) async {
+  /// Mendapatkan log aktivitas dengan filter tanggal
+  Future<List<LogAktivitasModel>> getLogsByDateRange({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     try {
-      final response = await _supabase
-          .from('vw_log_aktivitas')
-          .select()
-          .or('username.ilike.%$query%,aktivitas.ilike.%$query%')
-          .order('waktu_aktivitas', ascending: false);
+      var query = _client.from('log_aktivitas').select('''
+            id_log,
+            id_user,
+            aktivitas,
+            waktu_aktivitas,
+            users!inner(
+              username,
+              role
+            )
+          ''');
 
-      return (response as List)
-          .map((log) => LogAktivitasModel.fromJson(log))
-          .toList();
+      if (startDate != null) {
+        // Set waktu ke awal hari (00:00:00)
+        final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
+        query = query.gte(
+          'waktu_aktivitas',
+          startOfDay.toUtc().toIso8601String(),
+        );
+      }
+      
+      if (endDate != null) {
+        // Set waktu ke akhir hari (23:59:59)
+        final endOfDay = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+        query = query.lte(
+          'waktu_aktivitas',
+          endOfDay.toUtc().toIso8601String(),
+        );
+      }
+
+      final response = await query.order('waktu_aktivitas', ascending: false);
+
+      return (response as List).map<LogAktivitasModel>((log) {
+        final logData = log as Map<String, dynamic>;
+        
+        // Debug print untuk melihat struktur data
+        print('Raw log data with date filter: $logData');
+        
+        return LogAktivitasModel.fromJson(logData);
+      }).toList();
     } catch (e) {
-      print('Error searching logs: $e');
-      throw Exception('Gagal mencari log aktivitas');
+      print('Error detail in getLogsByDateRange: $e');
+      throw Exception('Gagal memuat log aktivitas: $e');
     }
   }
 
-  /// Filter log berdasarkan role
-  Future<List<LogAktivitasModel>> getLogsByRole(String role) async {
-    try {
-      final response = await _supabase
-          .from('vw_log_aktivitas')
-          .select()
-          .eq('role', role)
-          .order('waktu_aktivitas', ascending: false);
+  /// Subscribe ke perubahan log aktivitas realtime
+  RealtimeChannel subscribeToLogAktivitas(
+    Function(List<LogAktivitasModel>) onData,
+  ) {
+    final channel = _client.channel('log_aktivitas_realtime');
 
-      return (response as List)
-          .map((log) => LogAktivitasModel.fromJson(log))
-          .toList();
-    } catch (e) {
-      print('Error fetching logs by role: $e');
-      throw Exception('Gagal mengambil log berdasarkan role');
-    }
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'log_aktivitas',
+          callback: (payload) async {
+            try {
+              final data = await getAllLogs();
+              onData(data);
+            } catch (e) {
+              print('Error in realtime subscription: $e');
+            }
+          },
+        )
+        .subscribe();
+
+    return channel;
   }
 
-  /// Filter log berdasarkan tanggal
-  Future<List<LogAktivitasModel>> getLogsByDateRange(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    try {
-      final response = await _supabase
-          .from('vw_log_aktivitas')
-          .select()
-          .gte('waktu_aktivitas', startDate.toIso8601String())
-          .lte('waktu_aktivitas', endDate.toIso8601String())
-          .order('waktu_aktivitas', ascending: false);
-
-      return (response as List)
-          .map((log) => LogAktivitasModel.fromJson(log))
-          .toList();
-    } catch (e) {
-      print('Error fetching logs by date: $e');
-      throw Exception('Gagal mengambil log berdasarkan tanggal');
-    }
-  }
-
-  /// Mencatat aktivitas login
-  Future<void> logLogin(String userId) async {
-    try {
-      await _supabase.rpc('log_user_activity', params: {
-        'p_id_user': userId,
-        'p_aktivitas': 'Login ke aplikasi',
-      });
-    } catch (e) {
-      print('Error logging login: $e');
-    }
-  }
-
-  /// Mencatat aktivitas logout
-  Future<void> logLogout(String userId) async {
-    try {
-      await _supabase.rpc('log_user_activity', params: {
-        'p_id_user': userId,
-        'p_aktivitas': 'Logout dari aplikasi',
-      });
-    } catch (e) {
-      print('Error logging logout: $e');
-    }
-  }
-
-  /// Mencatat aktivitas custom
-  Future<void> logCustomActivity(String userId, String activity) async {
-    try {
-      await _supabase.rpc('log_user_activity', params: {
-        'p_id_user': userId,
-        'p_aktivitas': activity,
-      });
-    } catch (e) {
-      print('Error logging custom activity: $e');
-    }
-  }
-
-  /// Subscribe ke perubahan log aktivitas (real-time)
-  Stream<List<LogAktivitasModel>> subscribeToLogs() {
-    return _supabase
-        .from('vw_log_aktivitas')
-        .stream(primaryKey: ['id_log'])
-        .order('waktu_aktivitas', ascending: false)
-        .map((data) => data.map((log) => LogAktivitasModel.fromJson(log)).toList());
+  /// Unsubscribe dari channel
+  void unsubscribeChannel(RealtimeChannel channel) {
+    _client.removeChannel(channel);
   }
 }

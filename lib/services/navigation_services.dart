@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/dashboardpagepeminjam.dart';
 import '../models/users_models.dart';
-import 'package:ukk2026_machloanapp/screens/admin/dashboardpage_admin.dart'; // ✅ PERBAIKI INI
+import 'package:ukk2026_machloanapp/screens/admin/dashboardpage_admin.dart';
 import 'package:ukk2026_machloanapp/screens/petugas/dashboardpagepetugas.dart';
 
 class NavigationService {
@@ -9,14 +9,14 @@ class NavigationService {
   static Widget getHomeScreenByRole(UserModel user) {
     switch (user.role) {
       case 'admin':
-        return DashboardScreenAdmin(username: user.username); 
-      
+        return DashboardScreenAdmin(username: user.username);
+
       case 'petugas':
         return DashboardScreenPetugas(username: user.username);
-      
+
       case 'peminjam':
         return DashboardScreenPeminjam(username: user.username);
-      
+
       default:
         return _buildPlaceholder('Unknown Role', user);
     }
@@ -29,16 +29,16 @@ class NavigationService {
     bool clearStack = true,
   }) {
     final homeScreen = getHomeScreenByRole(user);
-    
+
     if (clearStack) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => homeScreen),
         (route) => false,
       );
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => homeScreen),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => homeScreen));
     }
   }
 
@@ -64,10 +64,7 @@ class NavigationService {
         'approve_peminjaman',
         'manage_pengembalian',
       ],
-      'peminjam': [
-        'create_peminjaman',
-        'view_my_peminjaman',
-      ],
+      'peminjam': ['create_peminjaman', 'view_my_peminjaman'],
     };
 
     final userPermissions = permissions[user.role] ?? [];
@@ -91,10 +88,7 @@ class NavigationService {
   // ================= PLACEHOLDER WIDGET (Temporary) =================
   static Widget _buildPlaceholder(String title, UserModel user) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(title), centerTitle: true),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

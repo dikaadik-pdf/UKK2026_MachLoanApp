@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/widgets/searchbar_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 import 'package:ukk2026_machloanapp/screens/admin/alat_list_admin.dart';
 import 'package:ukk2026_machloanapp/screens/admin/tambah_kategori_admin.dart';
+import 'package:ukk2026_machloanapp/screens/admin/edit_kategori_admin.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -82,9 +85,7 @@ class _AlatScreenState extends State<AlatScreen> {
     }
   }
 
-  // ==========================================
-  // SEARCH KATEGORI (TAMBAHAN)
-  // ==========================================
+
   Future<void> _searchKategori(String keyword) async {
     try {
       if (keyword.trim().isEmpty) {
@@ -244,7 +245,7 @@ class _AlatScreenState extends State<AlatScreen> {
                                       crossAxisCount: 2,
                                       crossAxisSpacing: 20,
                                       mainAxisSpacing: 20,
-                                      childAspectRatio: 1.0,
+                                      mainAxisExtent: 185,
                                     ),
                                 itemCount: _kategoriList.length,
                                 itemBuilder: (context, index) {
@@ -277,7 +278,6 @@ class _AlatScreenState extends State<AlatScreen> {
             ],
           ),
 
-          // TOMBOL + (YANG DIUBAH)
           Positioned(
             bottom: 40,
             left: 0,
@@ -330,54 +330,8 @@ class _AlatScreenState extends State<AlatScreen> {
   ) {
     return GestureDetector(
       onTap: onTap,
-      onLongPress: () {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Hapus Kategori?', style: GoogleFonts.poppins()),
-            content: Text(
-              'Yakin ingin menghapus kategori "$label"?\nSemua alat dalam kategori ini akan ikut terhapus.',
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal', style: GoogleFonts.poppins()),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () async {
-                  try {
-                    await SupabaseServices.hapusKategori(idKategori);
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Kategori "$label" berhasil dihapus'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      _loadKategori();
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Gagal menghapus: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: Text('Hapus', style: GoogleFonts.poppins()),
-              ),
-            ],
-          ),
-        );
-      },
       child: Container(
+        height: 185,
         decoration: BoxDecoration(
           color: const Color(0xFF1F4F6F),
           borderRadius: BorderRadius.circular(25),
@@ -390,27 +344,141 @@ class _AlatScreenState extends State<AlatScreen> {
           ],
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 80, color: const Color(0xFFD9D9D9)),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+            // Main Content Area
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 65, color: const Color(0xFFD9D9D9)),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text(
+                      label,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Inner Container for Action Buttons (Bottom)
+            Container(
+              height: 35,
+              decoration: const BoxDecoration(
+                color: Color(0xFF769DCB),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(25),
+                  bottomRight: Radius.circular(25),
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      final kategori = _kategoriList.firstWhere(
+                        (k) => k['id_kategori'] == idKategori,
+                      );
+                      _handleEditKategori(kategori);
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.edit, color: Colors.white, size: 22),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  GestureDetector(
+                    onTap: () => _handleDeleteKategori(idKategori, label),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.delete, color: Colors.white, size: 22),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _handleEditKategori(Map<String, dynamic> kategori) async {
+    final result = await showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (context) => EditKategoriDialog(kategori: kategori),
+    );
+
+    if (result == true) {
+      _loadKategori();
+    }
+  }
+
+  Future<void> _handleDeleteKategori(
+    int idKategori,
+    String namaKategori,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => ConfirmationDialog(
+        title: 'Hmm..?',
+        subtitle: 'Kamu Yakin Mau Hapus Kategori Ini?',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+    );
+
+    try {
+      await SupabaseServices.hapusKategori(idKategori);
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+
+        // Show success dialog
+        await showDialog(
+          context: context,
+          builder: (context) => SuccessDialog(
+            title: 'Berhasil!',
+            subtitle: 'Kategori "$namaKategori" telah dihapus',
+            onOk: () => Navigator.pop(context),
+          ),
+        );
+
+        _loadKategori();
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }

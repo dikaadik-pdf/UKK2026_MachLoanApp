@@ -33,7 +33,7 @@ class ConfirmationDialog extends StatelessWidget {
               title,
               style: GoogleFonts.poppins(
                 fontSize: 30,
-                fontWeight: FontWeight.w900, 
+                fontWeight: FontWeight.w900,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,

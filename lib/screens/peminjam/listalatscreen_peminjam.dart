@@ -297,7 +297,8 @@ class _AlatListPeminjamState extends State<AlatListPeminjam> {
                                                 builder: (_) => PinjamAlat(
                                                   namaAlat: alat['nama_alat'],
                                                   kategori: widget.namaKategori,
-                                                  stokTersedia: alat['stok_tersedia'],
+                                                  stokTersedia:
+                                                      alat['stok_tersedia'],
                                                   idAlat: alat['id_alat'],
                                                   username: widget.username,
                                                 ),

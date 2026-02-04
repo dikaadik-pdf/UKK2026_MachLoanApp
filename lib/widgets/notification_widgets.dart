@@ -30,7 +30,7 @@ class SuccessDialog extends StatelessWidget {
               title,
               style: GoogleFonts.poppins(
                 fontSize: 30,
-                fontWeight: FontWeight.w900, // Ada juga w1000 di beberapa font
+                fontWeight: FontWeight.w900,
                 color: Colors.white,
               ),
               textAlign: TextAlign.center,

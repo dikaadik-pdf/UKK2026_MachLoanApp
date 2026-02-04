@@ -3,14 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
 
 class PeminjamanPetugasScreen extends StatefulWidget {
   final String username;
 
-  const PeminjamanPetugasScreen({
-    Key? key,
-    required this.username,
-  }) : super(key: key);
+  const PeminjamanPetugasScreen({Key? key, required this.username})
+    : super(key: key);
 
   @override
   State<PeminjamanPetugasScreen> createState() =>
@@ -44,10 +44,10 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
     try {
       // Get ID petugas
       _idPetugas = await SupabaseServices.getUserIdByUsername(widget.username);
-      
+
       // Load data
       await _loadPeminjaman();
-      
+
       // Setup realtime
       _setupRealtimeSubscription();
     } catch (e) {
@@ -89,7 +89,12 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
     }
   }
 
-  Future<void> _updateStatus(int idPeminjaman, String newStatus, int idAlat, int jumlah) async {
+  Future<void> _updateStatus(
+    int idPeminjaman,
+    String newStatus,
+    int idAlat,
+    int jumlah,
+  ) async {
     try {
       await SupabaseServices.updateStatusPeminjaman(
         idPeminjaman: idPeminjaman,
@@ -101,26 +106,35 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
 
       if (!mounted) return;
 
-      final message = newStatus == 'disetujui' 
-          ? 'Peminjaman berhasil disetujui' 
-          : 'Peminjaman ditolak';
+      // Show success dialog
+      final message = newStatus == 'disetujui'
+          ? 'Peminjaman berhasil disetujui!'
+          : 'Peminjaman telah ditolak!';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.green,
+      final title = newStatus == 'disetujui' ? 'Berhasil!' : 'Ditolak!';
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => SuccessDialog(
+          title: title,
+          subtitle: message,
+          onOk: () {
+            Navigator.pop(context);
+            _loadPeminjaman();
+          },
         ),
       );
-
-      // Reload data
-      await _loadPeminjaman();
-
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal update status: $e'),
-          backgroundColor: Colors.red,
+
+      // Show error dialog
+      showDialog(
+        context: context,
+        builder: (context) => SuccessDialog(
+          title: 'Gagal!',
+          subtitle: 'Gagal update status: $e',
+          onOk: () => Navigator.pop(context),
         ),
       );
     }
@@ -128,7 +142,7 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
 
   void _changeFilter(String newFilter) {
     if (activeFilter == newFilter) return;
-    
+
     // Unsubscribe channel lama
     if (_peminjamanChannel != null) {
       SupabaseServices.unsubscribeChannel(_peminjamanChannel!);
@@ -163,7 +177,11 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 24),
+                  icon: const Icon(
+                    Icons.arrow_back_ios,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 5),
@@ -193,36 +211,38 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
           Expanded(
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF1F4F6F),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFF1F4F6F)),
                   )
                 : _peminjamanList.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.inbox_outlined,
-                              size: 80,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Tidak ada data peminjaman',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 80,
+                          color: Colors.grey[400],
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                        itemCount: _peminjamanList.length,
-                        itemBuilder: (context, index) => _buildLoanCard(_peminjamanList[index]),
-                      ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Tidak ada data peminjaman',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 25,
+                      vertical: 10,
+                    ),
+                    itemCount: _peminjamanList.length,
+                    itemBuilder: (context, index) =>
+                        _buildLoanCard(_peminjamanList[index]),
+                  ),
           ),
         ],
       ),
@@ -254,9 +274,14 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
               onTap: () => _changeFilter(filter['value']!),
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
+                  color: isSelected
+                      ? const Color(0xFF769DCB)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -264,7 +289,9 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               ),
@@ -280,25 +307,25 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
     final String kodePeminjaman = data['kode_peminjaman'];
     final String username = data['users']['username'];
     final String status = data['status'];
-    
+
     // Get detail peminjaman (ambil yang pertama)
     final detailList = data['detail_peminjaman'] as List;
     if (detailList.isEmpty) return const SizedBox.shrink();
-    
+
     final detail = detailList[0];
     final String namaAlat = detail['alat']['nama_alat'];
     final int jumlah = detail['jumlah'];
     final int idAlat = detail['alat']['id_alat'] ?? 0;
     final int dendaPerHari = detail['alat']['denda_per_hari'] ?? 5000;
-    
+
     // Parse tanggal
     final DateTime tanggalPinjam = DateTime.parse(data['tanggal_pinjam']);
     final DateTime estimasiKembali = DateTime.parse(data['estimasi_kembali']);
-    
-    // Data pengembalian (jika ada)
 
+    // Data pengembalian (jika ada)
     int? totalDenda;
-    if (data['pengembalian'] != null && (data['pengembalian'] as List).isNotEmpty) {
+    if (data['pengembalian'] != null &&
+        (data['pengembalian'] as List).isNotEmpty) {
       final pengembalian = (data['pengembalian'] as List)[0];
       totalDenda = pengembalian['total_denda'];
     }
@@ -338,8 +365,14 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
                 _buildTextRow('Kode Peminjaman', ': $kodePeminjaman'),
                 _buildTextRow('Peminjam', ': $username'),
                 _buildTextRow('Jumlah', ': $jumlah unit'),
-                _buildTextRow('Tanggal Peminjaman', ': ${dateFormatter.format(tanggalPinjam)}'),
-                _buildTextRow('Estimasi Pengembalian', ': ${dateFormatter.format(estimasiKembali)}'),
+                _buildTextRow(
+                  'Tanggal Peminjaman',
+                  ': ${dateFormatter.format(tanggalPinjam)}',
+                ),
+                _buildTextRow(
+                  'Estimasi Pengembalian',
+                  ': ${dateFormatter.format(estimasiKembali)}',
+                ),
                 _buildTextRow('Denda/Hari', ': Rp ${dendaPerHari.toString()}'),
               ],
             ),
@@ -363,8 +396,8 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
                       'Setujui',
                       const Color(0xFF8DC33E),
                       () => _showConfirmDialog(
-                        'Setujui Peminjaman?',
-                        'Yakin ingin menyetujui peminjaman ini?',
+                        'Eh...?',
+                        'Kamu Yakin Ingin Menyetujui Peminjaman Ini?',
                         () => _updateStatus(
                           data['id_peminjaman'],
                           'disetujui',
@@ -380,8 +413,8 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
                       'Tolak',
                       const Color(0xFFE52510),
                       () => _showConfirmDialog(
-                        'Tolak Peminjaman?',
-                        'Yakin ingin menolak peminjaman ini?',
+                        'Hmm...?',
+                        'Kamu Yakin Ingin Menolak Peminjaman Ini?',
                         () => _updateStatus(
                           data['id_peminjaman'],
                           'ditolak',
@@ -433,10 +466,10 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
         ],
       );
     }
-    
+
     String text;
     Color color;
-    
+
     switch (status) {
       case 'menunggu':
         text = 'Menunggu';
@@ -454,7 +487,7 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
         text = status;
         color = const Color(0xFF769DCB);
     }
-    
+
     return _badge(text, color);
   }
 
@@ -505,7 +538,11 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 26),
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.white,
+            size: 26,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -518,49 +555,23 @@ class _PeminjamanPetugasScreenState extends State<PeminjamanPetugasScreen> {
     );
   }
 
-  Future<void> _showConfirmDialog(String title, String message, VoidCallback onConfirm) async {
+  Future<void> _showConfirmDialog(
+    String title,
+    String message,
+    VoidCallback onConfirm,
+  ) async {
     return showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1F4F6F),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            title,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            message,
-            style: GoogleFonts.poppins(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Batal',
-                style: GoogleFonts.poppins(color: Colors.white70),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                onConfirm();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF769DCB),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                'Ya',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-            ),
-          ],
+        return ConfirmationDialog(
+          title: title,
+          subtitle: message,
+          onBack: () => Navigator.pop(context),
+          onContinue: () {
+            Navigator.pop(context);
+            onConfirm();
+          },
         );
       },
     );

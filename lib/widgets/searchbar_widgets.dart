@@ -22,15 +22,17 @@ class CustomSearchBar extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
-        onChanged: onChanged, // 🔥 tiap 1 huruf langsung trigger
+        onChanged: onChanged,
         style: const TextStyle(color: Colors.white, fontSize: 16),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.white70),
           prefixIcon: const Icon(Icons.search, color: Colors.white),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 12,
+          ),
         ),
       ),
     );

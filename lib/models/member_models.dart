@@ -1,14 +1,9 @@
 class MemberModel {
-  final String id;      
-  final String nama;   
-  final String status;  
+  final String id;
+  final String nama;
+  final String status;
 
-  MemberModel({
-    required this.id,
-    required this.nama,
-    required this.status,
-  });
-
+  MemberModel({required this.id, required this.nama, required this.status});
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
     return MemberModel(
@@ -18,15 +13,9 @@ class MemberModel {
     );
   }
 
-
   Map<String, dynamic> toJson() {
-    return {
-      'id_user': id,
-      'username': nama,
-      'role': _roleToDatabase(status),
-    };
+    return {'id_user': id, 'username': nama, 'role': _roleToDatabase(status)};
   }
-
 
   static String _formatRoleFromDatabase(String role) {
     switch (role.toLowerCase()) {

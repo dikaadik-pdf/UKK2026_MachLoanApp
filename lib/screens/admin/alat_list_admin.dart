@@ -197,7 +197,6 @@ class _AlatListScreenState extends State<AlatListScreen> {
                   ),
                   child: Column(
                     children: [
-                      // SEARCH BAR
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         decoration: BoxDecoration(
@@ -321,7 +320,6 @@ class _AlatListScreenState extends State<AlatListScreen> {
 
                                         const SizedBox(width: 15),
 
-                                        // INFO
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment:
@@ -436,25 +434,31 @@ class _AlatListScreenState extends State<AlatListScreen> {
                                             ],
                                           ),
                                         ),
-                                        
+
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            // TOMBOL EDIT - DIUBAH JADI SHOWDIALOG
                                             GestureDetector(
                                               onTap: () async {
                                                 final result = await showDialog(
                                                   context: context,
                                                   barrierDismissible: false,
-                                                  barrierColor: Colors.black.withOpacity(0.4),
-                                                  builder: (context) => EditAlatDialog(
-                                                    username: widget.username,
-                                                    idAlat: alat['id_alat'],
-                                                    namaAlat: alat['nama_alat'],
-                                                    stock: alat['stok_total'],
-                                                    kondisi: alat['kondisi'],
-                                                    dendaPerHari: alat['denda_per_hari'],
-                                                  ),
+                                                  barrierColor: Colors.black
+                                                      .withOpacity(0.4),
+                                                  builder: (context) =>
+                                                      EditAlatDialog(
+                                                        username:
+                                                            widget.username,
+                                                        idAlat: alat['id_alat'],
+                                                        namaAlat:
+                                                            alat['nama_alat'],
+                                                        stock:
+                                                            alat['stok_total'],
+                                                        kondisi:
+                                                            alat['kondisi'],
+                                                        dendaPerHari:
+                                                            alat['denda_per_hari'],
+                                                      ),
                                                 );
                                                 if (result == true) {
                                                   _loadAlat();

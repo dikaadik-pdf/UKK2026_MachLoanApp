@@ -299,7 +299,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 25, vertical: 5),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.orange[700],
+        color: const Color(0xFFE52510),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
@@ -308,7 +308,7 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Peminjaman menunggu persetujuan admin/petugas',
+              'Perhatian!\nPeminjaman menunggu persetujuan Petugas dan Jangan Lupa Ingatkan Petugas Untuk Melakukan Pengecekan Peminjaman',
               style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
             ),
           ),

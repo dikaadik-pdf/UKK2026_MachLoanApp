@@ -8,10 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AlatScreenPeminjam extends StatefulWidget {
   final String username;
 
-  const AlatScreenPeminjam({
-    super.key,
-    required this.username,
-  });
+  const AlatScreenPeminjam({super.key, required this.username});
 
   @override
   State<AlatScreenPeminjam> createState() => _AlatScreenPeminjamState();
@@ -112,7 +109,11 @@ class _AlatScreenPeminjamState extends State<AlatScreenPeminjam> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 8),
@@ -133,7 +134,10 @@ class _AlatScreenPeminjamState extends State<AlatScreenPeminjam> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 25,
+                      vertical: 30,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -155,11 +159,12 @@ class _AlatScreenPeminjamState extends State<AlatScreenPeminjam> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _kategoriList.length,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 20,
-                            mainAxisSpacing: 20,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 20,
+                                mainAxisSpacing: 20,
+                              ),
                           itemBuilder: (context, index) {
                             final kategori = _kategoriList[index];
                             return GestureDetector(
@@ -184,7 +189,9 @@ class _AlatScreenPeminjamState extends State<AlatScreenPeminjam> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      _getIconForKategori(kategori['nama_kategori']),
+                                      _getIconForKategori(
+                                        kategori['nama_kategori'],
+                                      ),
                                       size: 70,
                                       color: Colors.white,
                                     ),

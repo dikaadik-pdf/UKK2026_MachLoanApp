@@ -58,8 +58,11 @@ class _AccountScreenState extends State<AccountScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Text(
@@ -103,8 +106,11 @@ class _AccountScreenState extends State<AccountScreen> {
                         const CircleAvatar(
                           radius: 35,
                           backgroundColor: Color(0xFF769DCB),
-                          child: Icon(Icons.person,
-                              size: 50, color: Colors.white),
+                          child: Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(width: 20),
                         Column(
@@ -158,7 +164,9 @@ class _AccountScreenState extends State<AccountScreen> {
                         _buildInfoRow('Versi Aplikasi', 'V1.0.0'),
                         const Divider(color: Colors.white24),
                         _buildInfoRow(
-                            'Didukung Oleh', 'SMKS BRANTAS KARANGKATES'),
+                          'Didukung Oleh',
+                          'SMKS BRANTAS KARANGKATES',
+                        ),
                       ],
                     ),
                   ),
@@ -171,8 +179,11 @@ class _AccountScreenState extends State<AccountScreen> {
                     height: 55,
                     child: ElevatedButton.icon(
                       onPressed: () => _showLogoutDialog(context),
-                      icon: const Icon(Icons.logout,
-                          color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.logout,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       label: Text(
                         'LogOut',
                         style: GoogleFonts.poppins(
@@ -256,14 +267,18 @@ class _AccountScreenState extends State<AccountScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: GoogleFonts.poppins(
-                  color: Colors.white70, fontSize: 13)),
-          Text(value,
-              style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13)),
+          Text(
+            label,
+            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );

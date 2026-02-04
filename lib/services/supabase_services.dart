@@ -3,9 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseServices {
   static final SupabaseClient _client = Supabase.instance.client;
 
-  // ==========================================
+
   // DASHBOARD SERVICES
-  // ==========================================
 
   /// Mendapatkan statistik untuk dashboard admin
   static Future<Map<String, dynamic>> getDashboardStats() async {
@@ -68,7 +67,15 @@ class SupabaseServices {
         }
       }
 
-      final List<String> dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+      final List<String> dayLabels = [
+        'Sen',
+        'Sel',
+        'Rab',
+        'Kam',
+        'Jum',
+        'Sab',
+        'Min',
+      ];
       List<Map<String, dynamic>> result = [];
 
       for (int i = 0; i < 7; i++) {
@@ -89,9 +96,8 @@ class SupabaseServices {
     }
   }
 
-  // ==========================================
+
   // DASHBOARD REALTIME SUBSCRIPTIONS
-  // ==========================================
 
   /// Subscribe ke perubahan tabel 'alat' → update stat cards secara realtime
   static RealtimeChannel subscribeToDashboardAlat(
@@ -144,10 +150,8 @@ class SupabaseServices {
     return channel;
   }
 
-  // ==========================================
-  // KATEGORI SERVICES
-  // ==========================================
 
+  // KATEGORI SERVICES
   static Future<List<Map<String, dynamic>>> getKategori() async {
     try {
       final response = await _client
@@ -194,6 +198,30 @@ class SupabaseServices {
     }
   }
 
+  static Future<void> updateKategori({
+    required int idKategori,
+    String? namaKategori,
+    String? prefixKode,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{};
+
+      if (namaKategori != null) updateData['nama_kategori'] = namaKategori;
+      if (prefixKode != null) updateData['prefix_kode'] = prefixKode;
+
+      if (updateData.isEmpty) {
+        throw Exception('Tidak ada data yang diupdate');
+      }
+
+      await _client
+          .from('kategori')
+          .update(updateData)
+          .eq('id_kategori', idKategori);
+    } catch (e) {
+      throw Exception('Gagal mengupdate kategori: $e');
+    }
+  }
+
   static Future<void> hapusKategori(int idKategori) async {
     try {
       await _client.from('kategori').delete().eq('id_kategori', idKategori);
@@ -222,10 +250,8 @@ class SupabaseServices {
     }
   }
 
-  // ==========================================
-  // ALAT SERVICES
-  // ==========================================
 
+  // ALAT SERVICES
   static Future<List<Map<String, dynamic>>> getAlatByKategori(
     int idKategori,
   ) async {
@@ -317,12 +343,14 @@ class SupabaseServices {
 
         final int currentTotal = currentAlat['stok_total'];
         final int currentTersedia = currentAlat['stok_tersedia'];
-        
+
         final int selisih = stokTotal - currentTotal;
         final int newTersedia = currentTersedia + selisih;
 
         if (newTersedia < 0) {
-          throw Exception('Stok tidak bisa dikurangi karena ada ${currentTotal - currentTersedia} alat yang sedang dipinjam');
+          throw Exception(
+            'Stok tidak bisa dikurangi karena ada ${currentTotal - currentTersedia} alat yang sedang dipinjam',
+          );
         }
 
         updateData['stok_total'] = stokTotal;
@@ -351,10 +379,8 @@ class SupabaseServices {
     _client.removeChannel(channel);
   }
 
-  // ==========================================
-  // PEMINJAMAN SERVICES
-  // ==========================================
 
+  // PEMINJAMAN SERVICES
   static Future<String> _generateKodePeminjaman() async {
     final now = DateTime.now();
     final dateStr =
@@ -507,7 +533,9 @@ class SupabaseServices {
     try {
       await _client.from('pengembalian').insert({
         'id_peminjaman': idPeminjaman,
-        'tanggal_pengembalian': tanggalPengembalian.toIso8601String().split('T')[0],
+        'tanggal_pengembalian': tanggalPengembalian.toIso8601String().split(
+          'T',
+        )[0],
         'terlambat': terlambat,
         'total_denda': totalDenda,
       });
@@ -552,10 +580,8 @@ class SupabaseServices {
     }
   }
 
-  // ==========================================
-  // LAPORAN SERVICES
-  // ==========================================
 
+  // LAPORAN SERVICES
   static Future<List<Map<String, dynamic>>> getLaporanPeminjaman({
     DateTime? startDate,
     DateTime? endDate,
@@ -576,7 +602,10 @@ class SupabaseServices {
           ''');
 
       if (startDate != null) {
-        query = query.gte('tanggal_pinjam', startDate.toUtc().toIso8601String());
+        query = query.gte(
+          'tanggal_pinjam',
+          startDate.toUtc().toIso8601String(),
+        );
       }
       if (endDate != null) {
         query = query.lte('tanggal_pinjam', endDate.toUtc().toIso8601String());
@@ -600,7 +629,10 @@ class SupabaseServices {
           ''');
 
       if (startDate != null) {
-        query = query.gte('tanggal_pinjam', startDate.toUtc().toIso8601String());
+        query = query.gte(
+          'tanggal_pinjam',
+          startDate.toUtc().toIso8601String(),
+        );
       }
       if (endDate != null) {
         query = query.lte('tanggal_pinjam', endDate.toUtc().toIso8601String());
@@ -620,5 +652,39 @@ class SupabaseServices {
     } catch (e) {
       throw Exception('Gagal menghitung total: $e');
     }
+  }
+
+  /// Subscribe ke perubahan peminjaman dan detail_peminjaman untuk laporan realtime
+  static RealtimeChannel subscribeToLaporan(Function() onData) {
+    final channel = _client.channel('laporan_realtime');
+
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'peminjaman',
+          callback: (payload) async {
+            onData();
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'detail_peminjaman',
+          callback: (payload) async {
+            onData();
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'pengembalian',
+          callback: (payload) async {
+            onData();
+          },
+        )
+        .subscribe();
+
+    return channel;
   }
 }

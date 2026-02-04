@@ -9,7 +9,7 @@ import 'screens/splashscreen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ WAJIB: init locale date (FIX LocaleDataException)
+
   await initializeDateFormatting('id_ID', null);
 
   await Supabase.initialize(

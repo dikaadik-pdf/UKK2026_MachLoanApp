@@ -26,7 +26,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
   List<Map<String, dynamic>> weeklyData = [];
   bool isLoading = true;
 
-  // ✅ Realtime channel references
+  //Realtime channel references
   RealtimeChannel? _alatChannel;
   RealtimeChannel? _peminjamanChannel;
 
@@ -39,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
 
   @override
   void dispose() {
-    // ✅ Unsubscribe semua channel saat widget di-dispose
+    //Unsubscribe semua channel saat widget di-dispose
     if (_alatChannel != null) {
       SupabaseServices.unsubscribeChannel(_alatChannel!);
     }
@@ -78,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
 
   // ===== REALTIME SUBSCRIPTION =====
   void _subscribeRealtime() {
-    // ✅ Listen perubahan tabel 'alat' → update stat cards
+    //Listen perubahan tabel 'alat' → update stat cards
     _alatChannel = SupabaseServices.subscribeToDashboardAlat((statsData) {
       if (mounted) {
         setState(() {
@@ -89,8 +89,10 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
       }
     });
 
-    // ✅ Listen perubahan tabel 'peminjaman' & 'detail_peminjaman' → update chart
-    _peminjamanChannel = SupabaseServices.subscribeToDashboardPeminjaman((chartData) {
+    //Listen perubahan tabel 'peminjaman' & 'detail_peminjaman' → update chart
+    _peminjamanChannel = SupabaseServices.subscribeToDashboardPeminjaman((
+      chartData,
+    ) {
       if (mounted) {
         setState(() {
           weeklyData = chartData;
@@ -174,7 +176,10 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                               children: [
                                 _buildStatCard('Total\nAlat', '$totalAlat'),
                                 const SizedBox(width: 12),
-                                _buildStatCard('Alat\nTersedia', '$alatTersedia'),
+                                _buildStatCard(
+                                  'Alat\nTersedia',
+                                  '$alatTersedia',
+                                ),
                                 const SizedBox(width: 12),
                                 _buildStatCard('Dipinjam', '$alatDipinjam'),
                               ],
@@ -332,7 +337,11 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -340,7 +349,10 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
 
               // ===== USER PROFILE SECTION =====
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Column(
                   children: [
                     Container(
@@ -368,7 +380,10 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
                     ),
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
@@ -526,9 +541,9 @@ class _DashboardScreenState extends State<DashboardScreenAdmin> {
   }
 
   FlGridData _buildChartGrid() => FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        getDrawingHorizontalLine: (v) =>
-            FlLine(color: Colors.white10, strokeWidth: 1, dashArray: [5, 5]),
-      );
+    show: true,
+    drawVerticalLine: false,
+    getDrawingHorizontalLine: (v) =>
+        FlLine(color: Colors.white10, strokeWidth: 1, dashArray: [5, 5]),
+  );
 }
