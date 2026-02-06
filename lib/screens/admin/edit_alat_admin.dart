@@ -1,6 +1,9 @@
 import 'dart:ui';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
@@ -12,6 +15,7 @@ class EditAlatDialog extends StatefulWidget {
   final int stock;
   final String kondisi;
   final int dendaPerHari;
+  final String? fotoUrl;
 
   const EditAlatDialog({
     Key? key,
@@ -21,6 +25,7 @@ class EditAlatDialog extends StatefulWidget {
     required this.stock,
     required this.kondisi,
     required this.dendaPerHari,
+    this.fotoUrl,
   }) : super(key: key);
 
   @override
@@ -33,15 +38,18 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
   late TextEditingController _dendaController;
   late String _kondisi;
   bool _isLoading = false;
+  
+  File? _selectedImage;
+  XFile? _selectedImageWeb; // Untuk web
+  bool _imageChanged = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _namaController = TextEditingController(text: widget.namaAlat);
     _stockController = TextEditingController(text: widget.stock.toString());
-    _dendaController = TextEditingController(
-      text: widget.dendaPerHari.toString(),
-    );
+    _dendaController = TextEditingController(text: widget.dendaPerHari.toString());
     _kondisi = widget.kondisi;
   }
 
@@ -51,6 +59,30 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     _stockController.dispose();
     _dendaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          if (kIsWeb) {
+            _selectedImageWeb = pickedFile;
+          } else {
+            _selectedImage = File(pickedFile.path);
+          }
+          _imageChanged = true;
+        });
+      }
+    } catch (e) {
+      _showSnackbar('Gagal memilih gambar: $e', isError: true);
+    }
   }
 
   Future<void> _handleUpdate() async {
@@ -84,12 +116,18 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
     try {
       final denda = int.tryParse(_dendaController.text) ?? 0;
 
+      // Untuk web gunakan XFile, untuk mobile gunakan File
+      final imageToUpload = _imageChanged && !kIsWeb ? _selectedImage : null;
+      final xFileToUpload = _imageChanged && kIsWeb ? _selectedImageWeb : null;
+
       await SupabaseServices.updateAlat(
         idAlat: widget.idAlat,
         namaAlat: _namaController.text.trim(),
         stokTotal: stock,
         kondisi: _kondisi,
         dendaPerHari: denda.toDouble(),
+        imageFile: imageToUpload,
+        xFile: xFileToUpload,
       );
 
       if (mounted) {
@@ -154,6 +192,10 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
                 ),
                 const SizedBox(height: 30),
 
+                // Image Picker/Editor
+                _buildImagePicker(),
+                const SizedBox(height: 14),
+
                 // Input Nama Alat
                 _buildField("Nama Alat", _namaController),
                 const SizedBox(height: 14),
@@ -205,6 +247,174 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImagePicker() {
+    final hasNewImage = kIsWeb ? _selectedImageWeb != null : _selectedImage != null;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Foto Alat",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            height: 160,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1F4F6F),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(13),
+              child: hasNewImage
+                  ? Stack(
+                      children: [
+                        // Tampilkan gambar baru sesuai platform
+                        if (kIsWeb && _selectedImageWeb != null)
+                          Image.network(
+                            _selectedImageWeb!.path,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                  size: 40,
+                                ),
+                              );
+                            },
+                          )
+                        else if (!kIsWeb && _selectedImage != null)
+                          Image.file(
+                            _selectedImage!,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        
+                        // Tombol hapus
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () => setState(() {
+                              _selectedImage = null;
+                              _selectedImageWeb = null;
+                              _imageChanged = true;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.8),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : widget.fotoUrl != null && widget.fotoUrl!.isNotEmpty
+                      ? Stack(
+                          children: [
+                            Image.network(
+                              widget.fotoUrl!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildPlaceholder();
+                              },
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "Ganti",
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : _buildPlaceholder(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.add_photo_alternate_outlined,
+          size: 50,
+          color: Colors.white.withOpacity(0.5),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "Pilih Gambar",
+          style: GoogleFonts.poppins(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          "Tap untuk upload",
+          style: GoogleFonts.poppins(
+            color: Colors.white.withOpacity(0.5),
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 

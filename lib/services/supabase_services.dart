@@ -1,8 +1,11 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart' as path;
 
 class SupabaseServices {
   static final SupabaseClient _client = Supabase.instance.client;
-
 
   // DASHBOARD SERVICES
 
@@ -96,7 +99,6 @@ class SupabaseServices {
     }
   }
 
-
   // DASHBOARD REALTIME SUBSCRIPTIONS
 
   /// Subscribe ke perubahan tabel 'alat' → update stat cards secara realtime
@@ -149,7 +151,6 @@ class SupabaseServices {
 
     return channel;
   }
-
 
   // KATEGORI SERVICES
   static Future<List<Map<String, dynamic>>> getKategori() async {
@@ -250,6 +251,49 @@ class SupabaseServices {
     }
   }
 
+  // IMAGE UPLOAD HELPER
+  static Future<String?> uploadImage(File imageFile, String bucket) async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final extension = path.extension(imageFile.path);
+      final fileName = '$timestamp$extension';
+
+      await _client.storage
+          .from(bucket)
+          .upload(fileName, imageFile);
+
+      final String publicUrl = _client.storage
+          .from(bucket)
+          .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (e) {
+      throw Exception('Gagal upload gambar: $e');
+    }
+  }
+
+  // IMAGE UPLOAD HELPER FOR WEB (using XFile)
+  static Future<String?> uploadImageFromXFile(XFile imageFile, String bucket) async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final extension = path.extension(imageFile.name);
+      final fileName = '$timestamp$extension';
+
+      final bytes = await imageFile.readAsBytes();
+
+      await _client.storage
+          .from(bucket)
+          .uploadBinary(fileName, bytes);
+
+      final String publicUrl = _client.storage
+          .from(bucket)
+          .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (e) {
+      throw Exception('Gagal upload gambar: $e');
+    }
+  }
 
   // ALAT SERVICES
   static Future<List<Map<String, dynamic>>> getAlatByKategori(
@@ -300,8 +344,19 @@ class SupabaseServices {
     required double dendaPerHari,
     String? deskripsi,
     String? kondisi,
+    File? imageFile,
+    XFile? xFile,
   }) async {
     try {
+      String? fotoUrl;
+      
+      // Upload image if provided
+      if (kIsWeb && xFile != null) {
+        fotoUrl = await uploadImageFromXFile(xFile, 'alat');
+      } else if (!kIsWeb && imageFile != null) {
+        fotoUrl = await uploadImage(imageFile, 'alat');
+      }
+
       await _client.from('alat').insert({
         'nama_alat': namaAlat,
         'id_kategori': idKategori,
@@ -310,6 +365,7 @@ class SupabaseServices {
         'denda_per_hari': dendaPerHari,
         if (deskripsi != null) 'deskripsi': deskripsi,
         if (kondisi != null) 'kondisi': kondisi,
+        if (fotoUrl != null) 'foto_url': fotoUrl,
       });
     } catch (e) {
       throw Exception('Gagal menambah alat: $e');
@@ -324,6 +380,8 @@ class SupabaseServices {
     double? dendaPerHari,
     String? deskripsi,
     String? kondisi,
+    File? imageFile,
+    XFile? xFile,
   }) async {
     try {
       final updateData = <String, dynamic>{};
@@ -333,6 +391,15 @@ class SupabaseServices {
       if (dendaPerHari != null) updateData['denda_per_hari'] = dendaPerHari;
       if (deskripsi != null) updateData['deskripsi'] = deskripsi;
       if (kondisi != null) updateData['kondisi'] = kondisi;
+
+      // Upload new image if provided
+      if (kIsWeb && xFile != null) {
+        final fotoUrl = await uploadImageFromXFile(xFile, 'alat');
+        updateData['foto_url'] = fotoUrl;
+      } else if (!kIsWeb && imageFile != null) {
+        final fotoUrl = await uploadImage(imageFile, 'alat');
+        updateData['foto_url'] = fotoUrl;
+      }
 
       if (stokTotal != null) {
         final currentAlat = await _client
@@ -378,7 +445,6 @@ class SupabaseServices {
   static void unsubscribeChannel(RealtimeChannel channel) {
     _client.removeChannel(channel);
   }
-
 
   // PEMINJAMAN SERVICES
   static Future<String> _generateKodePeminjaman() async {
@@ -579,7 +645,6 @@ class SupabaseServices {
       throw Exception('Alat tidak ditemukan');
     }
   }
-
 
   // LAPORAN SERVICES
   static Future<List<Map<String, dynamic>>> getLaporanPeminjaman({

@@ -2,19 +2,33 @@ class MemberModel {
   final String id;
   final String nama;
   final String status;
+  final DateTime createdAt;
 
-  MemberModel({required this.id, required this.nama, required this.status});
+  MemberModel({
+    required this.id,
+    required this.nama,
+    required this.status,
+    required this.createdAt,
+  });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
     return MemberModel(
       id: json['id_user'] ?? '',
       nama: json['username'] ?? 'Unknown',
       status: _formatRoleFromDatabase(json['role'] ?? 'peminjam'),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'id_user': id, 'username': nama, 'role': _roleToDatabase(status)};
+    return {
+      'id_user': id,
+      'username': nama,
+      'role': _roleToDatabase(status),
+      'created_at': createdAt.toIso8601String(),
+    };
   }
 
   static String _formatRoleFromDatabase(String role) {
@@ -45,6 +59,6 @@ class MemberModel {
 
   @override
   String toString() {
-    return 'MemberModel(id: $id, nama: $nama, status: $status)';
+    return 'MemberModel(id: $id, nama: $nama, status: $status, createdAt: $createdAt)';
   }
 }

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ukk2026_machloanapp/models/logaktivitas_models.dart';
 import 'package:ukk2026_machloanapp/services/logaktivitas_services.dart';
-import 'package:ukk2026_machloanapp/widgets/filter_widgets.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/appbar_widgets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -118,6 +119,11 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
       final dateFormat = DateFormat('dd MMMM yyyy', 'id_ID');
       final filterText = _getFilterText();
 
+      // Load logo dari assets
+      final logoImage = await rootBundle.load('assets/images/mechloan.png');
+      final logoBytes = logoImage.buffer.asUint8List();
+      final logo = pw.MemoryImage(logoBytes);
+
       // Data yang akan di-print (gunakan _allLogs, bukan _filteredLogs agar tidak terpengaruh search)
       final dataToPrint = _allLogs;
 
@@ -126,37 +132,52 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
           build: (context) => [
-            // Header
+            // Header dengan Logo
             pw.Header(
               level: 0,
-              child: pw.Column(
+              child: pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(
-                    'LAPORAN LOG AKTIVITAS',
-                    style: pw.TextStyle(
-                      fontSize: 20,
-                      fontWeight: pw.FontWeight.bold,
+                  // Logo
+                  pw.Image(
+                    logo,
+                    width: 60,
+                    height: 60,
+                  ),
+                  pw.SizedBox(width: 16),
+                  // Informasi Header
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'LAPORAN LOG AKTIVITAS',
+                          style: pw.TextStyle(
+                            fontSize: 17,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.SizedBox(height: 8),
+                        pw.Text(
+                          'MACHLOAN : PART OF SMKS BRANTAS KARANGKATES',
+                          style: const pw.TextStyle(fontSize: 12),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          'Tanggal Cetak: ${dateFormat.format(now)}',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                        pw.Text(
+                          'Filter: $filterText',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                      ],
                     ),
                   ),
-                  pw.SizedBox(height: 8),
-                  pw.Text(
-                    'SMKS BRANTAS KARANGKATES',
-                    style: const pw.TextStyle(fontSize: 14),
-                  ),
-                  pw.SizedBox(height: 4),
-                  pw.Text(
-                    'Tanggal Cetak: ${dateFormat.format(now)}',
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                  pw.Text(
-                    'Filter: $filterText',
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                  pw.Divider(thickness: 2),
                 ],
               ),
             ),
+            pw.Divider(thickness: 2),
 
             pw.SizedBox(height: 16),
 
@@ -301,131 +322,91 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
+      appBar: CustomAppBarWithSearch(
+        title: 'Log Aktivitas',
+        searchController: _searchController,
+        searchHintText: 'Cari Aktivitas Disini!',
+        onSearchChanged: _filterSearch,
+      ),
       body: Column(
         children: [
-          // --- HEADER YANG LEBIH TINGGI (180) ---
-          Container(
-            width: double.infinity,
-            height: 190,
-            decoration: const BoxDecoration(
-              color: Color(0xFF769DCB),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 40, 20, 25),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top Bar: Back button + Title + Refresh
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Log Aktivitas',
-                          style: GoogleFonts.poppins(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            height: 1.2,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Colors.white,
-                          size: 26,
-                        ),
-                        onPressed: _loadLogs,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 25),
-
-                  // Search Bar di dalam AppBar
-                  Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1F4F6F),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _filterSearch,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Cari Aktivitas Disini!',
-                        hintStyle: GoogleFonts.poppins(
-                          color: Colors.white60,
-                          fontSize: 14,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: Colors.white70,
-                          size: 22,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           const SizedBox(height: 20),
 
-          // --- FILTER BAR ---
+          // --- SCROLLABLE FILTER BAR ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: CustomFilterBar(
-              filters: const [
-                'Semua',
-                'Hari Ini',
-                'Minggu Ini',
-                'Sebulan Ini',
+            child: Row(
+              children: [
+                Text(
+                  "Filter : ",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        'Semua',
+                        'Hari Ini',
+                        'Minggu Ini',
+                        'Sebulan Ini',
+                      ].map((filter) {
+                        final isSelected = filter == selectedFilter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => selectedFilter = filter);
+                              _loadLogs();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color(0xFF769DCB)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                filter,
+                                style: GoogleFonts.poppins(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : const Color(0xFF333333),
+                                  fontSize: 13,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
               ],
-              initialFilter: selectedFilter,
-              onFilterSelected: (filter) {
-                setState(() => selectedFilter = filter);
-                _loadLogs();
-              },
             ),
           ),
 
           const SizedBox(height: 20),
 
-          // --- MAIN CONTAINER ---
+          // --- MAIN CONTAINER (LANGSUNG TANPA WRAPPER) ---
           Expanded(
             child: Container(
               margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
               decoration: BoxDecoration(
-                color: const Color(0xFF1F4F6F),
+                color: const Color(0xFF769DCB),
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Column(
@@ -437,7 +418,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: const Color(0xFFDBEBFF),
                       ),
                     ),
                   ),
@@ -499,7 +480,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
   Widget _buildLogList() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: CircularProgressIndicator(color: Color(0xFFDBEBFF)),
       );
     }
 
@@ -508,12 +489,12 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, color: Colors.white70, size: 48),
+            const Icon(Icons.error_outline, color: Color(0xFFDBEBFF), size: 48),
             const SizedBox(height: 16),
             Text(
               'Terjadi Kesalahan',
               style: GoogleFonts.poppins(
-                color: Colors.white,
+                color: const Color(0xFFDBEBFF),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -522,7 +503,10 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
             Text(
               _errorMessage,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFDBEBFF).withOpacity(0.7),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -530,8 +514,8 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Coba Lagi'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF769DCB),
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFDBEBFF),
+                foregroundColor: const Color(0xFF769DCB),
               ),
             ),
           ],
@@ -544,20 +528,22 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inbox_outlined, color: Colors.white70, size: 48),
+            const Icon(Icons.inbox_outlined, color: Color(0xFFDBEBFF), size: 48),
             const SizedBox(height: 16),
             Text(
               _searchController.text.isNotEmpty
                   ? "Tidak ada aktivitas ditemukan"
                   : "Belum ada aktivitas",
-              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14),
+              style: GoogleFonts.poppins(
+                color: const Color(0xFFDBEBFF).withOpacity(0.7),
+                fontSize: 14,
+              ),
             ),
           ],
         ),
       );
     }
 
-    // Tampilkan semua data yang sudah difilter
     return ListView.builder(
       padding: EdgeInsets.zero,
       physics: const BouncingScrollPhysics(),
@@ -573,7 +559,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: const Color(0xFF769DCB),
+        color: const Color(0xFFDBEBFF),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -587,7 +573,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            backgroundColor: const Color(0xFF1F4F6F),
+            backgroundColor: const Color(0xFF769DCB),
             child: Icon(_getRoleIcon(log.role), color: Colors.white),
           ),
           const SizedBox(width: 12),
@@ -600,7 +586,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: const Color(0xFF769DCB),
                   ),
                 ),
                 Container(
@@ -632,7 +618,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                         log.aktivitas,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: Colors.white,
+                          color: const Color(0xFF769DCB),
                         ),
                       ),
                     ),
@@ -644,7 +630,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                           log.tanggal,
                           style: GoogleFonts.poppins(
                             fontSize: 10,
-                            color: Colors.white70,
+                            color: const Color(0xFF769DCB).withOpacity(0.7),
                           ),
                         ),
                         Text(
@@ -656,7 +642,7 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                               ),
                           style: GoogleFonts.poppins(
                             fontSize: 9,
-                            color: Colors.white60,
+                            color: const Color(0xFF769DCB).withOpacity(0.6),
                           ),
                         ),
                       ],

@@ -49,4 +49,47 @@ class AuthService {
       return false;
     }
   }
+
+  // ================= USER AVATAR SERVICES =================
+  
+  /// Update user avatar URL in database
+  Future<void> updateUserAvatar(String userId, String avatarUrl) async {
+    try {
+      await supabase
+          .from('users')
+          .update({'avatar_url': avatarUrl})
+          .eq('id_user', userId);
+    } catch (e) {
+      throw Exception('Gagal update avatar: $e');
+    }
+  }
+
+  /// Get user avatar URL
+  Future<String?> getUserAvatar(String userId) async {
+    try {
+      final response = await supabase
+          .from('users')
+          .select('avatar_url')
+          .eq('id_user', userId)
+          .single();
+      return response['avatar_url'];
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get user data including avatar
+  Future<Map<String, dynamic>?> getUserData(String userId) async {
+    try {
+      final response = await supabase
+          .from('users')
+          .select('*')
+          .eq('id_user', userId)
+          .single();
+      return response;
+    } catch (e) {
+      print('Error getting user data: $e');
+      return null;
+    }
+  }
 }

@@ -1,6 +1,9 @@
 import 'dart:ui';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
@@ -22,11 +25,13 @@ class TambahAlatDialog extends StatefulWidget {
 class _TambahAlatDialogState extends State<TambahAlatDialog> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _stockController = TextEditingController();
-  final TextEditingController _dendaController = TextEditingController(
-    text: '0',
-  );
+  final TextEditingController _dendaController = TextEditingController(text: '0');
   String _kondisi = 'baik';
   bool _isLoading = false;
+  
+  File? _selectedImage;
+  XFile? _selectedImageWeb; // Untuk web
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -34,6 +39,29 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     _stockController.dispose();
     _dendaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          if (kIsWeb) {
+            _selectedImageWeb = pickedFile;
+          } else {
+            _selectedImage = File(pickedFile.path);
+          }
+        });
+      }
+    } catch (e) {
+      _showSnackbar('Gagal memilih gambar: $e', isError: true);
+    }
   }
 
   Future<void> _handleSave() async {
@@ -54,8 +82,7 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Konfirmasi',
-        subtitle:
-            'Yakin ingin menambahkan alat "${_namaController.text.trim()}"?',
+        subtitle: 'Yakin ingin menambahkan alat "${_namaController.text.trim()}"?',
         onBack: () => Navigator.pop(context, false),
         onContinue: () => Navigator.pop(context, true),
       ),
@@ -68,12 +95,18 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     try {
       final denda = int.tryParse(_dendaController.text) ?? 0;
 
+      // Untuk web gunakan XFile, untuk mobile gunakan File
+      final imageToUpload = kIsWeb ? null : _selectedImage;
+      final xFileToUpload = kIsWeb ? _selectedImageWeb : null;
+
       await SupabaseServices.tambahAlat(
         namaAlat: _namaController.text.trim(),
         idKategori: widget.idKategori,
         stokTotal: stock,
         kondisi: _kondisi,
         dendaPerHari: denda.toDouble(),
+        imageFile: imageToUpload,
+        xFile: xFileToUpload,
       );
 
       if (mounted) {
@@ -137,6 +170,10 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
                 ),
                 const SizedBox(height: 30),
 
+                // Upload Image Container
+                _buildImagePicker(),
+                const SizedBox(height: 14),
+
                 // Input Nama Alat
                 _buildField(
                   "Nama Alat",
@@ -197,6 +234,123 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
     );
   }
 
+  Widget _buildImagePicker() {
+    final hasImage = kIsWeb ? _selectedImageWeb != null : _selectedImage != null;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Foto Alat",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            height: 160,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFDBEBFF),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 2,
+                style: BorderStyle.solid,
+              ),
+            ),
+            child: hasImage
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(13),
+                    child: Stack(
+                      children: [
+                        // Tampilkan gambar sesuai platform
+                        if (kIsWeb && _selectedImageWeb != null)
+                          Image.network(
+                            _selectedImageWeb!.path,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                  size: 40,
+                                ),
+                              );
+                            },
+                          )
+                        else if (!kIsWeb && _selectedImage != null)
+                          Image.file(
+                            _selectedImage!,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        
+                        // Tombol hapus
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () => setState(() {
+                              _selectedImage = null;
+                              _selectedImageWeb = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.8),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 50,
+                        color: const Color(0xFF6B7280),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Pilih Gambar",
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF6B7280),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Tap untuk upload",
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildField(
     String label,
     TextEditingController controller, {
@@ -218,7 +372,7 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
         Container(
           height: 46,
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: TextField(
@@ -229,7 +383,7 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
               border: InputBorder.none,
               hintText: hint,
               hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.3),
+                color: const Color(0xFF6B7280),
                 fontSize: 14,
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -260,16 +414,16 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
           height: 46,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _kondisi,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1F4F6F),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              dropdownColor: const Color(0xFFDBEBFF),
+              icon: const Icon(Icons.arrow_drop_down, color: const Color(0xFF6B7280),),
+              style: GoogleFonts.poppins(color: const Color(0xFF6B7280), fontSize: 14),
               items: const [
                 DropdownMenuItem(value: 'baik', child: Text('Baik')),
                 DropdownMenuItem(value: 'rusak', child: Text('Rusak')),

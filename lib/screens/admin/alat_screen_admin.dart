@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ukk2026_machloanapp/widgets/searchbar_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/appbar_widgets.dart';
 import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
 import 'package:ukk2026_machloanapp/screens/admin/alat_list_admin.dart';
@@ -85,11 +85,10 @@ class _AlatScreenState extends State<AlatScreen> {
     }
   }
 
-
   Future<void> _searchKategori(String keyword) async {
     try {
       if (keyword.trim().isEmpty) {
-        _loadKategori(); // balik ke data awal
+        _loadKategori();
         return;
       }
 
@@ -125,164 +124,108 @@ class _AlatScreenState extends State<AlatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
-      body: Stack(
+      appBar: CustomAppBarWithSearch(
+        title: 'Alat',
+        searchController: _searchController,
+        searchHintText: 'Cari Alat Disini!',
+        onSearchChanged: _searchKategori,
+        showBackButton: true,
+      ),
+      body: Column(
         children: [
-          Column(
-            children: [
-              Container(
-                width: double.infinity,
-                height: 120,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF769DCB),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Alat',
-                        style: GoogleFonts.poppins(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          height: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // --- CONTENT AREA ---
-              Expanded(
-                child: _loading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF1F4F6F),
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 25,
-                          vertical: 30,
-                        ),
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF769DCB),
+                    ),
+                  )
+                : _kategoriList.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(40.0),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Search Bar Custom
-                            Container(
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: CustomSearchBar(
-                                controller: _searchController,
-                                hintText: 'Cari Alat Disini!',
-                                onChanged: _searchKategori,
+                            Icon(
+                              Icons.category_outlined,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Belum ada kategori',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-
-                            const SizedBox(height: 35),
-
-                            if (_kategoriList.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.all(40.0),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.category_outlined,
-                                      size: 80,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Belum ada kategori',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        color: Colors.grey[600],
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Tekan tombol + untuk menambah kategori',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        color: Colors.grey[500],
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 20,
-                                      mainAxisSpacing: 20,
-                                      mainAxisExtent: 185,
-                                    ),
-                                itemCount: _kategoriList.length,
-                                itemBuilder: (context, index) {
-                                  final kategori = _kategoriList[index];
-                                  return _buildCategoryCard(
-                                    context,
-                                    _getIconForKategori(
-                                      kategori['nama_kategori'],
-                                    ),
-                                    kategori['nama_kategori'],
-                                    kategori['id_kategori'],
-                                    () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => AlatListScreen(
-                                          username: widget.username,
-                                          idKategori: kategori['id_kategori'],
-                                          namaKategori:
-                                              kategori['nama_kategori'],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tekan tombol "Tambah Kategori" untuk menambah',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.grey[500],
                               ),
+                              textAlign: TextAlign.center,
+                            ),
                           ],
                         ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.fromLTRB(25, 20, 25, 0),
+                        child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
+                            mainAxisExtent: 185,
+                          ),
+                          itemCount: _kategoriList.length,
+                          itemBuilder: (context, index) {
+                            final kategori = _kategoriList[index];
+                            return _buildCategoryCard(
+                              context,
+                              _getIconForKategori(
+                                kategori['nama_kategori'],
+                              ),
+                              kategori['nama_kategori'],
+                              kategori['id_kategori'],
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AlatListScreen(
+                                    username: widget.username,
+                                    idKategori: kategori['id_kategori'],
+                                    namaKategori: kategori['nama_kategori'],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-              ),
-            ],
           ),
-
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
+          
+          // Tombol Tambah Kategori - Menempel di bawah dengan border radius atas
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF769DCB),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              top: false,
               child: GestureDetector(
                 onTap: () async {
                   final result = await showDialog(
@@ -298,20 +241,23 @@ class _AlatScreenState extends State<AlatScreen> {
                   }
                 },
                 child: Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1F4F6F),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                  height: 45,
+                  color: Colors.transparent,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.add, color: Colors.white, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tambah Kategori',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 45),
                 ),
               ),
             ),
@@ -333,7 +279,7 @@ class _AlatScreenState extends State<AlatScreen> {
       child: Container(
         height: 185,
         decoration: BoxDecoration(
-          color: const Color(0xFF1F4F6F),
+          color: const Color(0xFF769DCB),
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -350,7 +296,7 @@ class _AlatScreenState extends State<AlatScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 65, color: const Color(0xFFD9D9D9)),
+                  Icon(icon, size: 65, color: Colors.white),
                   const SizedBox(height: 10),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -370,11 +316,11 @@ class _AlatScreenState extends State<AlatScreen> {
               ),
             ),
 
-            // Inner Container for Action Buttons (Bottom)
+            // Inner Container for Action Buttons (Bottom) - DBEBFF
             Container(
-              height: 35,
+              height: 45,
               decoration: const BoxDecoration(
-                color: Color(0xFF769DCB),
+                color: Color(0xFFDBEBFF),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(25),
                   bottomRight: Radius.circular(25),
@@ -390,17 +336,25 @@ class _AlatScreenState extends State<AlatScreen> {
                       );
                       _handleEditKategori(kategori);
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.all(4.0),
-                      child: Icon(Icons.edit, color: Colors.white, size: 22),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Icon(
+                        Icons.edit,
+                        color: const Color(0xFF769DCB),
+                        size: 22,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   GestureDetector(
                     onTap: () => _handleDeleteKategori(idKategori, label),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4.0),
-                      child: Icon(Icons.delete, color: Colors.white, size: 22),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Icon(
+                        Icons.delete,
+                        color: const Color(0xFF769DCB),
+                        size: 22,
+                      ),
                     ),
                   ),
                 ],

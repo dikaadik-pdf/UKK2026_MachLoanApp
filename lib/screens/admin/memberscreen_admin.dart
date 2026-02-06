@@ -7,6 +7,8 @@ import 'package:ukk2026_machloanapp/widgets/filter_widgets.dart';
 import 'package:ukk2026_machloanapp/services/member_services.dart';
 import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/appbar_widgets.dart';
+import 'package:intl/intl.dart';
 
 class MemberScreen extends StatefulWidget {
   const MemberScreen({super.key});
@@ -17,6 +19,7 @@ class MemberScreen extends StatefulWidget {
 
 class _MemberScreenState extends State<MemberScreen> {
   final MemberService _memberService = MemberService();
+  final TextEditingController _searchController = TextEditingController();
   List<MemberModel> _allMembers = [];
   bool _isLoading = true;
   String _currentFilter = 'Admin';
@@ -26,6 +29,12 @@ class _MemberScreenState extends State<MemberScreen> {
   void initState() {
     super.initState();
     _loadMembers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMembers() async {
@@ -111,57 +120,25 @@ class _MemberScreenState extends State<MemberScreen> {
     }
   }
 
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
-      body: Stack(
+      appBar: CustomAppBarWithSearch(
+        title: 'Keanggotaan',
+        searchController: _searchController,
+        searchHintText: 'Cari Anggota Disini!',
+        showBackButton: true,
+      ),
+      body: Column(
         children: [
-          Column(
-            children: [
-              _buildHeader(),
-              Expanded(child: _buildContent()),
-            ],
-          ),
-          _buildFloatingButton(),
+          Expanded(child: _buildContent()),
+          _buildAddMemberButton(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      height: 120,
-      decoration: const BoxDecoration(
-        color: Color(0xFF769DCB),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios,
-                color: Colors.white,
-                size: 20,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-            Text(
-              'Kelola Anggota',
-              style: GoogleFonts.poppins(
-                fontSize: 26,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -169,7 +146,7 @@ class _MemberScreenState extends State<MemberScreen> {
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF1F4F6F)),
+        child: CircularProgressIndicator(color: Color(0xFF769DCB)),
       );
     }
 
@@ -202,7 +179,7 @@ class _MemberScreenState extends State<MemberScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Coba Lagi'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1F4F6F),
+                  backgroundColor: const Color(0xFF769DCB),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -255,12 +232,12 @@ class _MemberScreenState extends State<MemberScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadMembers,
-              color: const Color(0xFF1F4F6F),
+              color: const Color(0xFF769DCB),
               child: _filteredMembers.isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       itemCount: _filteredMembers.length,
-                      padding: const EdgeInsets.only(bottom: 100),
+                      padding: const EdgeInsets.only(bottom: 20),
                       itemBuilder: (context, index) {
                         return _buildMemberCard(_filteredMembers[index]);
                       },
@@ -314,57 +291,133 @@ class _MemberScreenState extends State<MemberScreen> {
   Widget _buildMemberCard(MemberModel member) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
+        color: const Color(0xFF769DCB),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Expanded(
+          // Main content area
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  member.nama,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  member.status,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            member.nama,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            member.status,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.edit_note,
-                  color: Colors.white,
-                  size: 30,
-                ),
-                onPressed: () => _handleEdit(member),
+
+          // Inner container with badge and actions
+          Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFDBEBFF),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.white,
-                  size: 26,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Badge tanggal bergabung
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6B7280),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _formatDate(member.createdAt),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                onPressed: () => _handleDelete(member),
-              ),
-            ],
+
+                // Action buttons
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _handleEdit(member),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Color(0xFF769DCB),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _handleDelete(member),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(
+                          Icons.delete,
+                          color: Color(0xFF769DCB),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -374,6 +427,7 @@ class _MemberScreenState extends State<MemberScreen> {
   Future<void> _handleEdit(MemberModel member) async {
     final result = await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => EditMemberDialog(member: member),
     );
 
@@ -382,29 +436,44 @@ class _MemberScreenState extends State<MemberScreen> {
     }
   }
 
-  Widget _buildFloatingButton() {
-    return Positioned(
-      bottom: 35,
-      left: 0,
-      right: 0,
-      child: Center(
+  Widget _buildAddMemberButton() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF769DCB),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(25),
+          topRight: Radius.circular(25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
         child: GestureDetector(
           onTap: _handleAdd,
           child: Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1F4F6F),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+            height: 45,
+            color: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Tambah Anggota',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
-            child: const Icon(Icons.add, color: Colors.white, size: 40),
           ),
         ),
       ),
@@ -414,6 +483,7 @@ class _MemberScreenState extends State<MemberScreen> {
   Future<void> _handleAdd() async {
     final result = await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => const AddMemberDialog(),
     );
 

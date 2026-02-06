@@ -28,57 +28,50 @@ class _CustomFilterBarState extends State<CustomFilterBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 45,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        children: widget.filters.asMap().entries.map((entry) {
-          final index = entry.key;
-          final filter = entry.value;
-          final isSelected = filter == selectedFilter;
-
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                right: index < widget.filters.length - 1 ? 6 : 0,
-              ),
-              child: GestureDetector(
+    return Row(
+      children: [
+        // Label "Filter :" di bagian kiri
+        Text(
+          "Filter : ",
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF333333),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Daftar Filter menggunakan Wrap agar tidak overflow
+        Expanded(
+          child: Wrap(
+            spacing: 12, // Jarak antar item filter
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: widget.filters.map((filter) {
+              final isSelected = filter == selectedFilter;
+              return GestureDetector(
                 onTap: () {
                   setState(() => selectedFilter = filter);
                   widget.onFilterSelected?.call(filter);
                 },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF769DCB)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(25),
+                    color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Center(
-                    child: Text(
-                      filter,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                      ),
+                  child: Text(
+                    filter,
+                    style: GoogleFonts.poppins(
+                      color: isSelected ? Colors.white : const Color(0xFF333333),
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }

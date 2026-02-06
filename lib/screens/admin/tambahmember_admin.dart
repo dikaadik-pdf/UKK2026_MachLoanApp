@@ -150,7 +150,7 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.white70,
+                    color: const Color(0xFF1F4F6F).withOpacity(0.7),
                     size: 20,
                   ),
                   onPressed: () =>
@@ -213,14 +213,17 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
         Container(
           height: 46,
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: TextField(
             controller: controller,
             obscureText: obscureText,
             keyboardType: keyboardType,
-            style: const TextStyle(color: Colors.white),
+            style: GoogleFonts.poppins(
+              color: const Color(0xFF1F4F6F),
+              fontSize: 14,
+            ),
             decoration: InputDecoration(
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
@@ -228,6 +231,10 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
                 vertical: 12,
               ),
               suffixIcon: suffix,
+              hintStyle: GoogleFonts.poppins(
+                color: const Color(0xFF1F4F6F).withOpacity(0.5),
+                fontSize: 14,
+              ),
             ),
           ),
         ),
@@ -252,16 +259,22 @@ class _AddMemberDialogState extends State<AddMemberDialog> {
           height: 46,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _selectedRole,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1F4F6F),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              dropdownColor: const Color(0xFFDBEBFF),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: const Color(0xFF1F4F6F),
+              ),
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF1F4F6F),
+                fontSize: 14,
+              ),
               items: ['Admin', 'Petugas', 'Peminjam'].map((role) {
                 return DropdownMenuItem(value: role, child: Text(role));
               }).toList(),

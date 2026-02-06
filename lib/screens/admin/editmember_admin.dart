@@ -24,7 +24,7 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.member.nama);
-    _selectedRole = widget.member.status; // 'Admin', 'Petugas', atau 'Peminjam'
+    _selectedRole = widget.member.status;
   }
 
   Future<void> _handleUpdate() async {
@@ -33,7 +33,6 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
       return;
     }
 
-    // Tampilkan konfirmasi sebelum update
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
@@ -58,7 +57,6 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
 
     if (mounted) {
       if (result['success']) {
-        // Tampilkan success dialog
         await showDialog(
           context: context,
           builder: (context) => SuccessDialog(
@@ -68,7 +66,6 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
           ),
         );
 
-        // Tutup dialog utama dan kirim result
         if (mounted) {
           Navigator.pop(context, result);
         }
@@ -100,7 +97,7 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
       backgroundColor: Colors.transparent,
       child: Container(
         width: 345,
-        constraints: const BoxConstraints(minHeight: 480),
+        constraints: const BoxConstraints(minHeight: 500),
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 32),
         decoration: BoxDecoration(
           color: const Color(0xFF769DCB),
@@ -126,7 +123,7 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
 
               // Dropdown Role
               _buildRoleDropdown(),
-              const SizedBox(height: 120),
+              const SizedBox(height: 140),
 
               // Buttons
               Row(
@@ -141,7 +138,7 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _actionButton(
-                      "Simpan",
+                      "Edit",
                       const Color(0xFF2F3A40),
                       _isLoading ? null : _handleUpdate,
                       isLoading: _isLoading,
@@ -172,17 +169,24 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
         Container(
           height: 46,
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: TextField(
             controller: controller,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
+            style: GoogleFonts.poppins(
+              color: const Color(0xFF1F4F6F),
+              fontSize: 14,
+            ),
+            decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
+              contentPadding: const EdgeInsets.symmetric(
                 horizontal: 18,
                 vertical: 12,
+              ),
+              hintStyle: GoogleFonts.poppins(
+                color: const Color(0xFF1F4F6F).withOpacity(0.5),
+                fontSize: 14,
               ),
             ),
           ),
@@ -208,16 +212,22 @@ class _EditMemberDialogState extends State<EditMemberDialog> {
           height: 46,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _selectedRole,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1F4F6F),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              dropdownColor: const Color(0xFFDBEBFF),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: const Color(0xFF1F4F6F),
+              ),
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF1F4F6F),
+                fontSize: 14,
+              ),
               items: ['Admin', 'Petugas', 'Peminjam'].map((role) {
                 return DropdownMenuItem(value: role, child: Text(role));
               }).toList(),
