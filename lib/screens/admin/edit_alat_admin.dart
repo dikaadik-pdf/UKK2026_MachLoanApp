@@ -271,7 +271,7 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
             height: 160,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFF1F4F6F),
+              color: const Color(0xFFDBEBFF),
               borderRadius: BorderRadius.circular(15),
               border: Border.all(
                 color: Colors.white.withOpacity(0.3),
@@ -396,13 +396,13 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
         Icon(
           Icons.add_photo_alternate_outlined,
           size: 50,
-          color: Colors.white.withOpacity(0.5),
+          color: const Color(0xFF769DCB),
         ),
         const SizedBox(height: 8),
         Text(
           "Pilih Gambar",
           style: GoogleFonts.poppins(
-            color: Colors.white.withOpacity(0.7),
+            color: const Color(0xFF769DCB),
             fontSize: 14,
           ),
         ),
@@ -410,7 +410,7 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
         Text(
           "Tap untuk upload",
           style: GoogleFonts.poppins(
-            color: Colors.white.withOpacity(0.5),
+            color: const Color(0xFF769DCB),
             fontSize: 12,
           ),
         ),
@@ -438,13 +438,13 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
         Container(
           height: 46,
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: const TextStyle(color: const Color(0xFF769DCB), fontSize: 14),
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
@@ -475,16 +475,16 @@ class _EditAlatDialogState extends State<EditAlatDialog> {
           height: 46,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            color: const Color(0xFF1F4F6F),
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(25),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _kondisi,
               isExpanded: true,
-              dropdownColor: const Color(0xFF1F4F6F),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-              style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
+              dropdownColor: const Color(0xFFDBEBFF),
+              icon: const Icon(Icons.arrow_drop_down, color: const Color(0xFF769DCB)),
+              style: GoogleFonts.poppins(color: const Color(0xFF769DCB), fontSize: 14),
               items: const [
                 DropdownMenuItem(value: 'baik', child: Text('Baik')),
                 DropdownMenuItem(value: 'rusak', child: Text('Rusak')),

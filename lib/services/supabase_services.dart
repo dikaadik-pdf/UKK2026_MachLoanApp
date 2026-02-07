@@ -225,6 +225,13 @@ class SupabaseServices {
 
   static Future<void> hapusKategori(int idKategori) async {
     try {
+      // Pertama, hapus semua alat yang ada di kategori ini (CASCADE DELETE)
+      await _client
+          .from('alat')
+          .delete()
+          .eq('id_kategori', idKategori);
+      
+      // Kemudian hapus kategorinya
       await _client.from('kategori').delete().eq('id_kategori', idKategori);
     } catch (e) {
       throw Exception('Gagal menghapus kategori: $e');
@@ -251,17 +258,26 @@ class SupabaseServices {
     }
   }
 
-  // IMAGE UPLOAD HELPER
+  // IMAGE UPLOAD HELPER - UPDATED WITH PUBLIC BUCKET SUPPORT
   static Future<String?> uploadImage(File imageFile, String bucket) async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final extension = path.extension(imageFile.path);
       final fileName = '$timestamp$extension';
 
+      // Upload file dengan options
       await _client.storage
           .from(bucket)
-          .upload(fileName, imageFile);
+          .upload(
+            fileName,
+            imageFile,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+            ),
+          );
 
+      // Get public URL
       final String publicUrl = _client.storage
           .from(bucket)
           .getPublicUrl(fileName);
@@ -272,7 +288,7 @@ class SupabaseServices {
     }
   }
 
-  // IMAGE UPLOAD HELPER FOR WEB (using XFile)
+  // IMAGE UPLOAD HELPER FOR WEB (using XFile) - UPDATED
   static Future<String?> uploadImageFromXFile(XFile imageFile, String bucket) async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -281,10 +297,19 @@ class SupabaseServices {
 
       final bytes = await imageFile.readAsBytes();
 
+      // Upload file dengan options
       await _client.storage
           .from(bucket)
-          .uploadBinary(fileName, bytes);
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+            ),
+          );
 
+      // Get public URL
       final String publicUrl = _client.storage
           .from(bucket)
           .getPublicUrl(fileName);
@@ -526,7 +551,7 @@ class SupabaseServices {
               jumlah,
               alat!inner(nama_alat, denda_per_hari, id_alat)
             ),
-            pengembalian(tanggal_pengembalian, total_denda)
+            pengembalian(tanggal_pengembalian, total_denda, terlambat)
           ''')
           .eq('status', status)
           .order('tanggal_pinjam', ascending: false);

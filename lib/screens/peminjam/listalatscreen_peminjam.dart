@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ukk2026_machloanapp/widgets/appbar_widgets.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/pinjamalat.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -52,8 +53,7 @@ class _AlatListPeminjamState extends State<AlatListPeminjam> {
         if (!mounted) return;
         setState(() {
           _alatList = data;
-          _filteredAlatList = data;
-          _loading = false;
+          _filterAlat();
         });
       },
     );
@@ -103,244 +103,248 @@ class _AlatListPeminjamState extends State<AlatListPeminjam> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
-      body: Column(
-        children: [
-          // HEADER
-          Container(
-            width: double.infinity,
-            height: 120,
-            decoration: const BoxDecoration(
-              color: Color(0xFF769DCB),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+      appBar: CustomAppBarWithSearch(
+        title: widget.namaKategori,
+        searchController: _searchController,
+        searchHintText: 'Cari Alat Disini!',
+        onSearchChanged: (value) => _filterAlat(),
+        showBackButton: true,
+      ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF769DCB),
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      widget.namaKategori,
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        height: 1,
+            )
+          : _filteredAlatList.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 80,
+                        color: Colors.grey[400],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-              child: Column(
-                children: [
-                  // SEARCH
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1F4F6F),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      style: GoogleFonts.poppins(color: Colors.white),
-                      decoration: InputDecoration(
-                        icon: const Icon(Icons.search, color: Colors.white70),
-                        hintText: "Cari Alat Disini!",
-                        hintStyle: GoogleFonts.poppins(color: Colors.white70),
-                        border: InputBorder.none,
+                      const SizedBox(height: 16),
+                      Text(
+                        _searchController.text.isEmpty
+                            ? 'Belum ada alat'
+                            : 'Alat tidak ditemukan',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _searchController.text.isEmpty
+                            ? 'Kategori ini belum memiliki alat'
+                            : 'Coba kata kunci lain',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
                   ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+                  itemCount: _filteredAlatList.length,
+                  itemBuilder: (context, index) {
+                    final alat = _filteredAlatList[index];
+                    final bool isAvailable = alat['stok_tersedia'] > 0;
+                    final String? fotoUrl = alat['foto_url'];
 
-                  const SizedBox(height: 20),
-
-                  Expanded(
-                    child: _loading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF1F4F6F),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: _filteredAlatList.length,
-                            itemBuilder: (context, index) {
-                              final alat = _filteredAlatList[index];
-                              final bool isAvailable =
-                                  alat['stok_tersedia'] > 0;
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 14),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1F4F6F),
-                                  borderRadius: BorderRadius.circular(18),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.18),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(18),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 50,
-                                            height: 50,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(
-                                                0.1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(
-                                              Icons.build_circle_outlined,
-                                              color: isAvailable
-                                                  ? Colors.white70
-                                                  : Colors.white38,
-                                              size: 28,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 15),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  alat['nama_alat'],
-                                                  style: GoogleFonts.poppins(
-                                                    color: Colors.white,
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  'Kode: ${alat['kode_alat']}',
-                                                  style: GoogleFonts.poppins(
-                                                    color: Colors.white60,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      'Stok: ${alat['stok_tersedia']}/${alat['stok_total']}',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                            color:
-                                                                Colors.white70,
-                                                            fontSize: 13,
-                                                          ),
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    _badge(
-                                                      isAvailable
-                                                          ? 'Tersedia'
-                                                          : 'Habis',
-                                                      isAvailable
-                                                          ? Colors.green
-                                                          : Colors.red,
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    _badge(
-                                                      alat['kondisi']
-                                                          .toString()
-                                                          .toUpperCase(),
-                                                      alat['kondisi'] == 'baik'
-                                                          ? Colors.blue
-                                                          : Colors.orange,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // ===== TOMBOL PEMINJAM =====
-                                    InkWell(
-                                      onTap: isAvailable
-                                          ? () {
-                                              showDialog(
-                                                context: context,
-                                                barrierDismissible: true,
-                                                builder: (_) => PinjamAlat(
-                                                  namaAlat: alat['nama_alat'],
-                                                  kategori: widget.namaKategori,
-                                                  stokTersedia:
-                                                      alat['stok_tersedia'],
-                                                  idAlat: alat['id_alat'],
-                                                  username: widget.username,
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF769DCB),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.18),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Main Content - Image & Info (102px height)
+                          SizedBox(
+                            height: 102,
+                            child: Row(
+                              children: [
+                                // Image menempel langsung di sisi kiri container
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(18),
+                                  ),
+                                  child: Container(
+                                    width: 110,
+                                    height: 102,
+                                    color: Colors.white.withOpacity(0.1),
+                                    child: fotoUrl != null && fotoUrl.isNotEmpty
+                                        ? Image.network(
+                                            fotoUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.broken_image_outlined,
+                                                color: Colors.white38,
+                                                size: 40,
+                                              );
+                                            },
+                                            loadingBuilder: (context, child,
+                                                loadingProgress) {
+                                              if (loadingProgress == null) {
+                                                return child;
+                                              }
+                                              return Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  value: loadingProgress
+                                                              .expectedTotalBytes !=
+                                                          null
+                                                      ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                      : null,
+                                                  strokeWidth: 2,
+                                                  color: Colors.white38,
                                                 ),
                                               );
-                                            }
-                                          : null,
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isAvailable
-                                              ? const Color(0xFF769DCB)
-                                              : Colors.grey,
-                                          borderRadius: const BorderRadius.only(
-                                            bottomLeft: Radius.circular(18),
-                                            bottomRight: Radius.circular(18),
+                                            },
+                                          )
+                                        : Icon(
+                                            Icons.image_not_supported_outlined,
+                                            color: Colors.white38,
+                                            size: 40,
                                           ),
-                                        ),
-                                        child: Text(
-                                          'Pinjam Alat Ini!',
-                                          textAlign: TextAlign.center,
+                                  ),
+                                ),
+
+                                // Text Info
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 15,
+                                      vertical: 12,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          alat['nama_alat'],
                                           style: GoogleFonts.poppins(
                                             color: Colors.white,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Kode: ${alat['kode_alat']}',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white60,
+                                            fontSize: 12,
                                           ),
                                         ),
-                                      ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              'Stok: ${alat['stok_tersedia']}/${alat['stok_total']}',
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.white70,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            _badge(
+                                              isAvailable
+                                                  ? 'Tersedia'
+                                                  : 'Habis',
+                                              isAvailable
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            _badge(
+                                              alat['kondisi']
+                                                  .toString()
+                                                  .toUpperCase(),
+                                              alat['kondisi'] == 'baik'
+                                                  ? const Color(0xFF6B7280)
+                                                  : Colors.orange,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              );
-                            },
+                              ],
+                            ),
                           ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+
+                          // ===== TOMBOL PINJAM ALAT INI =====
+                          InkWell(
+                            onTap: isAvailable
+                                ? () {
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: true,
+                                      builder: (_) => PinjamAlat(
+                                        namaAlat: alat['nama_alat'],
+                                        kategori: widget.namaKategori,
+                                        stokTersedia: alat['stok_tersedia'],
+                                        idAlat: alat['id_alat'],
+                                        username: widget.username,
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isAvailable
+                                    ? const Color(0xFFDDDDDD): const Color(0xFFB0B0B0),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(18),
+                                  bottomRight: Radius.circular(18),
+                                ),
+                              ),
+                              child: Text(
+                                'Pinjam Alat Ini!',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  color: isAvailable
+                                      ? const Color(0xFF769DCB)
+                                      : Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
     );
   }
 
@@ -348,13 +352,13 @@ class _AlatListPeminjamState extends State<AlatListPeminjam> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
+        color: color,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: GoogleFonts.poppins(
-          color: color.withOpacity(0.9),
+          color: const Color(0xFFDDDDDD),
           fontSize: 10,
           fontWeight: FontWeight.w600,
         ),

@@ -103,31 +103,36 @@ class _DashboardScreenAdminState extends State<DashboardScreenAdmin> {
           SafeArea(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        const double maxWidth = 1100;
+                : RefreshIndicator(
+                    color: primaryAppbar,
+                    onRefresh: _loadDashboardData,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          const double maxWidth = 1100;
 
-                        return Center(
-                          child: Container(
-                            width: constraints.maxWidth > maxWidth
-                                ? maxWidth
-                                : constraints.maxWidth,
-                            child: Column(
-                              children: [
-                                _buildHeader(),
-                                const SizedBox(height: 22),
-                                _buildWelcomeCard(),
-                                const SizedBox(height: 28),
-                                _buildStats(),
-                                const SizedBox(height: 32),
-                                _buildChartCard(),
-                                const SizedBox(height: 40),
-                              ],
+                          return Center(
+                            child: Container(
+                              width: constraints.maxWidth > maxWidth
+                                  ? maxWidth
+                                  : constraints.maxWidth,
+                              child: Column(
+                                children: [
+                                  _buildHeader(),
+                                  const SizedBox(height: 22),
+                                  _buildWelcomeCard(),
+                                  const SizedBox(height: 28),
+                                  _buildStats(),
+                                  const SizedBox(height: 32),
+                                  _buildChartCard(),
+                                  const SizedBox(height: 40),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
           ),
@@ -209,7 +214,13 @@ class _DashboardScreenAdminState extends State<DashboardScreenAdmin> {
         decoration: BoxDecoration(
           color: containerColor,
           borderRadius: BorderRadius.circular(25),
-          boxShadow: _softShadow(),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6B7280).withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,7 +282,13 @@ class _DashboardScreenAdminState extends State<DashboardScreenAdmin> {
       decoration: BoxDecoration(
         color: containerColor,
         borderRadius: BorderRadius.circular(25),
-        boxShadow: _softShadow(),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6B7280).withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -309,7 +326,13 @@ class _DashboardScreenAdminState extends State<DashboardScreenAdmin> {
         decoration: BoxDecoration(
           color: containerColor,
           borderRadius: BorderRadius.circular(25),
-          boxShadow: _softShadow(),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6B7280).withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,20 +492,5 @@ class _DashboardScreenAdminState extends State<DashboardScreenAdmin> {
         )
       ]);
     });
-  }
-
-  List<BoxShadow> _softShadow() {
-    return [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.06),
-        blurRadius: 12,
-        offset: const Offset(5, 5),
-      ),
-      const BoxShadow(
-        color: Colors.white,
-        blurRadius: 12,
-        offset: Offset(-5, -5),
-      ),
-    ];
   }
 }

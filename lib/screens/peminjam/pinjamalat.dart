@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
@@ -117,7 +118,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
         width: double.infinity,
         height: 510,
         decoration: BoxDecoration(
-          color: const Color(0xFF1D4E6D),
+          color: const Color(0xFF769DCB),
           borderRadius: BorderRadius.circular(25),
         ),
         child: Padding(
@@ -130,7 +131,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8BA9D4),
+                  color: const Color(0xFFDBEBFF),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
@@ -138,8 +139,8 @@ class _PinjamAlatState extends State<PinjamAlat> {
                   children: [
                     Text(
                       widget.namaAlat,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF769DCB),
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -147,8 +148,8 @@ class _PinjamAlatState extends State<PinjamAlat> {
                     const SizedBox(height: 4),
                     Text(
                       widget.kategori,
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF769DCB),
                         fontSize: 14,
                       ),
                     ),
@@ -159,7 +160,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
                       width: 130,
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.25),
+                        color: const Color(0xFF769DCB),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -173,7 +174,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
                           ),
                           Text(
                             jumlah.toString(),
-                            style: const TextStyle(
+                            style: GoogleFonts.poppins(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -216,15 +217,19 @@ class _PinjamAlatState extends State<PinjamAlat> {
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   Text(
                     "Denda Keterlambatan",
-                    style: TextStyle(color: Colors.white),
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
                   ),
                   Text(
                     "5000/hari",
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Colors.white,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -243,8 +248,8 @@ class _PinjamAlatState extends State<PinjamAlat> {
                         ? null
                         : _submitPeminjaman,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF757B8C),
-                      disabledBackgroundColor: Colors.grey.withOpacity(0.5),
+                      backgroundColor: const Color(0xFFDDDDDD),
+                      disabledBackgroundColor: const Color(0xFFDDDDDD),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -254,14 +259,14 @@ class _PinjamAlatState extends State<PinjamAlat> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: const Color(0xFF6B7280),
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
+                        : Text(
                             "Pinjam",
-                            style: TextStyle(
-                              color: Colors.white,
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFFDDDDDD),
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -280,7 +285,7 @@ class _PinjamAlatState extends State<PinjamAlat> {
   Widget _counterBtn({required IconData icon, VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
-      child: Icon(icon, color: onTap == null ? Colors.white30 : Colors.white),
+      child: Icon(icon, color: onTap == null ? const Color(0x4D6B7280) : Colors.white),
     );
   }
 
@@ -294,22 +299,35 @@ class _PinjamAlatState extends State<PinjamAlat> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 14,
+          ),
+        ),
         InkWell(
           onTap: enabled ? onTap : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF8BA9D4).withOpacity(enabled ? 0.9 : 0.4),
+              color: const Color(0xFFDBEBFF).withOpacity(enabled ? 0.9 : 0.4),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_month, color: Colors.white, size: 16),
+                Icon(
+                  Icons.calendar_month,
+                  color: const Color(0xFF769DCB),
+                  size: 16,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   value,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF769DCB),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),

@@ -378,12 +378,12 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: const TextStyle(color: const Color(0xFF769DCB), fontSize: 14),
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: hint,
               hintStyle: TextStyle(
-                color: const Color(0xFF6B7280),
+                color: const Color(0xFF769DCB),
                 fontSize: 14,
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -422,8 +422,8 @@ class _TambahAlatDialogState extends State<TambahAlatDialog> {
               value: _kondisi,
               isExpanded: true,
               dropdownColor: const Color(0xFFDBEBFF),
-              icon: const Icon(Icons.arrow_drop_down, color: const Color(0xFF6B7280),),
-              style: GoogleFonts.poppins(color: const Color(0xFF6B7280), fontSize: 14),
+              icon: const Icon(Icons.arrow_drop_down, color: const Color(0xFF769DCB),),
+              style: GoogleFonts.poppins(color: const Color(0xFF769DCB), fontSize: 14),
               items: const [
                 DropdownMenuItem(value: 'baik', child: Text('Baik')),
                 DropdownMenuItem(value: 'rusak', child: Text('Rusak')),

@@ -46,12 +46,15 @@ class _AccountScreenState extends State<AccountScreen> {
       // Optional: Refresh avatar from database to ensure it's up to date
       if (_userId != null) {
         final latestAvatarUrl = await _authService.getUserAvatar(_userId!);
-        if (mounted && latestAvatarUrl != null && latestAvatarUrl != _avatarUrl) {
+        // Treat empty string as null
+        final avatarToUse = (latestAvatarUrl == null || latestAvatarUrl.isEmpty) ? null : latestAvatarUrl;
+        
+        if (mounted && avatarToUse != _avatarUrl) {
           setState(() {
-            _avatarUrl = latestAvatarUrl;
+            _avatarUrl = avatarToUse;
           });
-          // Update session with latest avatar
-          await _sessionService.updateAvatar(latestAvatarUrl);
+          // Update session with latest avatar (use empty string if null for session)
+          await _sessionService.updateAvatar(avatarToUse ?? '');
         }
       }
     }
@@ -61,9 +64,11 @@ class _AccountScreenState extends State<AccountScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (BuildContext context) {
         return Container(
-          height: 110,
+          height: 125,
+          width: MediaQuery.of(context).size.width,
           decoration: const BoxDecoration(
             color: Color(0xFF769DCB),
             borderRadius: BorderRadius.only(
@@ -71,40 +76,124 @@ class _AccountScreenState extends State<AccountScreen> {
               topRight: Radius.circular(25),
             ),
           ),
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.white),
-                title: Text(
-                  'Ambil dari Galeri',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 16,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library, color: Colors.white, size: 28),
+                  title: Text(
+                    'Ambil Dari Galerimu',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.white),
-                title: Text(
-                  'Ambil dari Kamera',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 16,
+                const Divider(color: Colors.white24, thickness: 1, height: 1),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+                  title: Text(
+                    'Hapus Avatar Saat Ini',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deleteAvatar();
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Future<void> _deleteAvatar() async {
+    if (_avatarUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Tidak ada avatar untuk dihapus',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (_) => ConfirmationDialog(
+        title: 'Hapus Avatar?',
+        subtitle: 'Avatar akan kembali ke default',
+        onBack: () => Navigator.pop(context),
+        onContinue: () async {
+          Navigator.pop(context);
+
+          // Show loading
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+
+          try {
+            if (_userId != null) {
+              // Update user avatar to empty string in database (represents no avatar)
+              await _authService.updateUserAvatar(_userId!, '');
+
+              // Update session with empty string
+              await _sessionService.updateAvatar('');
+
+              setState(() {
+                _avatarUrl = null;
+              });
+
+              if (!mounted) return;
+              Navigator.pop(context); // Close loading
+
+              // Show success
+              showDialog(
+                context: context,
+                builder: (_) => SuccessDialog(
+                  title: 'Berhasil!',
+                  subtitle: 'Avatar berhasil dihapus',
+                  onOk: () => Navigator.pop(context),
+                ),
+              );
+            }
+          } catch (e) {
+            if (!mounted) return;
+            Navigator.pop(context); // Close loading
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Gagal menghapus avatar: ${e.toString()}',
+                  style: GoogleFonts.poppins(),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -175,27 +264,61 @@ class _AccountScreenState extends State<AccountScreen> {
         if (!mounted) return;
         Navigator.pop(context); // Close loading dialog
 
-        // Show error dialog
+        // Show error dialog with custom widget
         showDialog(
           context: context,
-          builder: (_) => AlertDialog(
-            title: Text(
-              'Gagal',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-            ),
-            content: Text(
-              'Gagal mengupload foto: ${e.toString()}',
-              style: GoogleFonts.poppins(),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'OK',
-                  style: GoogleFonts.poppins(color: const Color(0xFF769DCB)),
-                ),
+          builder: (_) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1F4F6F),
+                borderRadius: BorderRadius.circular(25),
               ),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Gagal!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Gagal mengupload foto',
+                    style: const TextStyle(fontSize: 18, color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: 100,
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2F3A40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Oke!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFDDDDDD),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       }

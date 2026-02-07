@@ -451,12 +451,12 @@ class _LogAktivitasScreenState extends State<LogAktivitasScreen> {
                 icon: const Icon(
                   Icons.print,
                   color: Colors.white,
-                  size: 24,
+                  size: 30,
                 ),
                 label: Text(
                   "Print",
                   style: GoogleFonts.poppins(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),

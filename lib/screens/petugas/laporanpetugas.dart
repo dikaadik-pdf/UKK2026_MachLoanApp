@@ -1,31 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
-import 'package:ukk2026_machloanapp/widgets/filter_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-class LaporanPage extends StatefulWidget {
+class LaporanPetugasPage extends StatefulWidget {
   final String username;
 
-  const LaporanPage({super.key, required this.username});
+  const LaporanPetugasPage({super.key, required this.username});
 
   @override
-  State<LaporanPage> createState() => _LaporanPageState();
+  State<LaporanPetugasPage> createState() => _LaporanPetugasPageState();
 }
 
-class _LaporanPageState extends State<LaporanPage> {
+class _LaporanPetugasPageState extends State<LaporanPetugasPage> {
   String selectedFilter = 'Semua';
   bool isLoading = true;
   List<Map<String, dynamic>> laporanData = [];
   int totalAlat = 0;
+  int totalPeminjam = 0;
   bool _localeInitialized = false;
   RealtimeChannel? _realtimeChannel;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -40,6 +42,7 @@ class _LaporanPageState extends State<LaporanPage> {
     if (_realtimeChannel != null) {
       SupabaseServices.unsubscribeChannel(_realtimeChannel!);
     }
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -58,7 +61,6 @@ class _LaporanPageState extends State<LaporanPage> {
     }
   }
 
-  /// Parse tanggal dari string — handles both DATE (yyyy-MM-dd) dan TIMESTAMP (yyyy-MM-ddTHH:mm:ss)
   DateTime? _parseDate(String? dateStr) {
     if (dateStr == null) return null;
     try {
@@ -82,7 +84,7 @@ class _LaporanPageState extends State<LaporanPage> {
         case 'Minggu Ini':
           startDate = DateTime.now().subtract(const Duration(days: 7));
           break;
-        case 'Sebulan Ini':
+        case 'Bulan Ini':
           startDate = DateTime.now().subtract(const Duration(days: 30));
           break;
         case 'Semua':
@@ -101,21 +103,31 @@ class _LaporanPageState extends State<LaporanPage> {
         endDate: endDate,
       );
 
+      // Hitung jumlah peminjam unik
+      final uniquePeminjam = <String>{};
+      for (var item in data) {
+        final username = item['users']?['username'];
+        if (username != null) {
+          uniquePeminjam.add(username);
+        }
+      }
+
       if (!mounted) return;
 
-      // Sort di sini — tanggal_pinjam terbaru di atas (descending)
+      // Sort descending
       data.sort((a, b) {
         final dateA = _parseDate(a['tanggal_pinjam']);
         final dateB = _parseDate(b['tanggal_pinjam']);
         if (dateA == null && dateB == null) return 0;
-        if (dateA == null) return 1; // null taruh di bawah
+        if (dateA == null) return 1;
         if (dateB == null) return -1;
-        return dateB.compareTo(dateA); // descending = terbaru di atas
+        return dateB.compareTo(dateA);
       });
 
       setState(() {
         laporanData = data;
         totalAlat = total;
+        totalPeminjam = uniquePeminjam.length;
         isLoading = false;
       });
     } catch (e) {
@@ -143,6 +155,10 @@ class _LaporanPageState extends State<LaporanPage> {
       final dateFormat = DateFormat('dd MMMM yyyy', 'id_ID');
       final filterText = _getFilterText();
 
+      // Load logo dari asset
+      final logoImage = await rootBundle.load('assets/images/mechloan.png');
+      final logoBytes = logoImage.buffer.asUint8List();
+
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
@@ -154,19 +170,38 @@ class _LaporanPageState extends State<LaporanPage> {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(
-                    'LAPORAN PEMINJAMAN ALAT',
-                    style: pw.TextStyle(
-                      fontSize: 20,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
+                  // Logo dan Judul
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.Image(
+                        pw.MemoryImage(logoBytes),
+                        width: 60,
+                        height: 60,
+                      ),
+                      pw.SizedBox(width: 16),
+                      pw.Expanded(
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              'LAPORAN : PEMINJAMAN ALAT',
+                              style: pw.TextStyle(
+                                fontSize: 20,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            pw.SizedBox(height: 4),
+                            pw.Text(
+                              'MACHLOAN : PART OF SMKS BRANTAS KARANGKATES',
+                              style: const pw.TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   pw.SizedBox(height: 8),
-                  pw.Text(
-                    'SMKS BRANTAS KARANGKATES',
-                    style: const pw.TextStyle(fontSize: 14),
-                  ),
-                  pw.SizedBox(height: 4),
                   pw.Text(
                     'Tanggal Cetak: ${dateFormat.format(now)}',
                     style: const pw.TextStyle(fontSize: 10),
@@ -182,32 +217,71 @@ class _LaporanPageState extends State<LaporanPage> {
 
             pw.SizedBox(height: 16),
 
-            // Total
-            pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(width: 1),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Total Alat Dipinjam:',
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
+            // Statistik
+            pw.Row(
+              children: [
+                pw.Expanded(
+                  child: pw.Container(
+                    padding: const pw.EdgeInsets.all(12),
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border.all(width: 1),
+                      borderRadius: pw.BorderRadius.circular(8),
+                    ),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Total Alat Dipinjam:',
+                          style: const pw.TextStyle(fontSize: 12),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          '$totalAlat',
+                          style: pw.TextStyle(
+                            fontSize: 24,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          'Alat',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                      ],
                     ),
                   ),
-                  pw.Text(
-                    '$totalAlat Item',
-                    style: pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
+                ),
+                pw.SizedBox(width: 16),
+                pw.Expanded(
+                  child: pw.Container(
+                    padding: const pw.EdgeInsets.all(12),
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border.all(width: 1),
+                      borderRadius: pw.BorderRadius.circular(8),
+                    ),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Total Peminjam:',
+                          style: const pw.TextStyle(fontSize: 12),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          '$totalPeminjam',
+                          style: pw.TextStyle(
+                            fontSize: 24,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          'Peminjam',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
             pw.SizedBox(height: 20),
@@ -218,7 +292,7 @@ class _LaporanPageState extends State<LaporanPage> {
             ),
             pw.SizedBox(height: 8),
 
-            // Table — laporanData sudah di-sort descending
+            // Table
             pw.Table(
               border: pw.TableBorder.all(),
               columnWidths: {
@@ -247,9 +321,7 @@ class _LaporanPageState extends State<LaporanPage> {
                   final index = entry.key;
                   final item = entry.value;
                   final detailList = item['detail_peminjaman'] as List;
-                  final detail = detailList.isNotEmpty
-                      ? detailList.first
-                      : null;
+                  final detail = detailList.isNotEmpty ? detailList.first : null;
                   final alat = detail?['alat'];
 
                   return pw.TableRow(
@@ -324,7 +396,7 @@ class _LaporanPageState extends State<LaporanPage> {
         return 'Data Hari Ini';
       case 'Minggu Ini':
         return 'Data 7 Hari Terakhir';
-      case 'Sebulan Ini':
+      case 'Bulan Ini':
         return 'Data 30 Hari Terakhir';
       case 'Semua':
       default:
@@ -336,183 +408,331 @@ class _LaporanPageState extends State<LaporanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            height: 125,
-            decoration: const BoxDecoration(
-              color: Color(0xFF769DCB),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(185),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF769DCB),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(25),
+              bottomRight: Radius.circular(25),
             ),
+          ),
+          child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 45, 20, 20),
-              child: Row(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    onPressed: () => Navigator.pop(context),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Laporan Petugas',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 5),
-                  Text(
-                    'Laporan',
-                    style: GoogleFonts.poppins(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                  const SizedBox(height: 20),
+                  Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDBEBFF),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF769DCB),
+                        fontSize: 15,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: 'Cari Alat Disini!',
+                        hintStyle: GoogleFonts.poppins(
+                          color: const Color(0xFF769DCB),
+                          fontSize: 15,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          size: 22,
+                          color: const Color(0xFF769DCB),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-              child: Column(
-                children: [
-                  // Filter Bar menggunakan CustomFilterBar
-                  CustomFilterBar(
-                    filters: const [
-                      'Semua',
-                      'Hari Ini',
-                      'Minggu Ini',
-                      'Sebulan Ini',
-                    ],
-                    initialFilter: selectedFilter,
-                    onFilterSelected: (filter) {
-                      setState(() => selectedFilter = filter);
-                      _loadLaporan();
-                    },
+        ),
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 15),
+
+          // Filter Bar dengan ScrollView
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            child: Row(
+              children: [
+                Text(
+                  "Filter : ",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF333333),
                   ),
-                  const SizedBox(height: 25),
-                  Container(
-                    width: double.infinity,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip('Semua', 'Semua'),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('Hari Ini', 'Hari Ini'),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('Minggu Ini', 'Minggu Ini'),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('Bulan Ini', 'Bulan Ini'),
                       ],
                     ),
-                    child: ElevatedButton.icon(
-                      onPressed: isLoading ? null : _printLaporan,
-                      icon: const Icon(
-                        Icons.print,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                      label: Text(
-                        "Print",
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF333333),
-                        disabledBackgroundColor: Colors.grey,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 30),
+                ),
+              ],
+            ),
+          ),
 
-                  // --- TOTAL CARD ---
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(25),
+          const SizedBox(height: 20),
+
+          // Statistik Cards - 2 Cards dengan H150 dan text center
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            child: Row(
+              children: [
+                // Card Total Alat Dipinjam
+                Expanded(
+                  child: Container(
+                    height: 225,
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1F4F6F),
-                      borderRadius: BorderRadius.circular(25),
+                      color: const Color(0xFFDBEBFF),
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Total Alat Dipinjam:",
+                          'Total Alat Dipinjam:',
                           style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 16,
+                            color: const Color(0xFF769DCB),
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
+                          textAlign: TextAlign.center,
                         ),
+                        const SizedBox(height: 45),
                         isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : Text(
-                                "$totalAlat Item",
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
+                            ? const SizedBox(
+                                height: 50,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '$totalAlat',
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF769DCB),
+                                      fontSize: 70,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 23),
+                                  Text(
+                                    'Alat',
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF769DCB),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 25),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Detail Peminjaman",
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1F4F6F),
-                      ),
+                ),
+
+                const SizedBox(width: 15),
+
+                // Card Total Peminjam
+                Expanded(
+                  child: Container(
+                    height: 225,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDBEBFF),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Total Peminjam:',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF769DCB),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 45),
+                        isLoading
+                            ? const SizedBox(
+                                height: 50,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: const Color(0xFF769DCB),
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '$totalPeminjam',
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF769DCB),
+                                      fontSize: 70,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 23),
+                                  Text(
+                                    'Peminjam',
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF769DCB),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 25),
+
+          // Detail Peminjaman Section
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 25),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Detail Peminjaman',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1F4F6F),
                     ),
                   ),
                   const SizedBox(height: 15),
 
-                  // Data list — sudah di-sort descending dari _loadLaporan
+                  // Data list
                   if (isLoading)
                     const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF1F4F6F),
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFDBEBFF),
+                        ),
                       ),
                     )
                   else if (laporanData.isEmpty)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(32),
-                        child: Text(
-                          'Tidak ada data peminjaman',
-                          style: GoogleFonts.poppins(
-                            color: const Color(0xFF1F4F6F),
-                            fontSize: 14,
-                          ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.inbox_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tidak ada data peminjaman',
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     )
                   else
                     ...laporanData.map((item) {
                       final detailList = item['detail_peminjaman'] as List;
-                      final detail = detailList.isNotEmpty
-                          ? detailList.first
-                          : null;
+                      final detail =
+                          detailList.isNotEmpty ? detailList.first : null;
                       final alat = detail?['alat'];
 
                       return _buildToolItem(
@@ -525,7 +745,76 @@ class _LaporanPageState extends State<LaporanPage> {
               ),
             ),
           ),
+
+          const SizedBox(height: 20),
+
+          // Print Button - Tidak Menempel
+          Padding(
+            padding: const EdgeInsets.fromLTRB(25, 0, 25, 25),
+            child: Container(
+              width: double.infinity,
+              height: 60,
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: isLoading ? null : _printLaporan,
+                icon: Icon(
+                  Icons.print,
+                  color: isLoading ? Colors.grey[400] : Colors.white,
+                  size: 30,
+                ),
+                label: Text(
+                  "Print",
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: isLoading ? Colors.grey[400] : Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2F3A40),
+                  disabledBackgroundColor: Colors.grey[300],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String filterValue, String label) {
+    final isSelected = selectedFilter == filterValue;
+    return GestureDetector(
+      onTap: () {
+        setState(() => selectedFilter = filterValue);
+        _loadLaporan();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: isSelected ? Colors.white : const Color(0xFF333333),
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }
@@ -535,8 +824,15 @@ class _LaporanPageState extends State<LaporanPage> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
+        color: const Color(0xFFDBEBFF),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,8 +840,8 @@ class _LaporanPageState extends State<LaporanPage> {
           Text(
             name,
             style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 22,
+              color: const Color(0xFF769DCB),
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -554,12 +850,12 @@ class _LaporanPageState extends State<LaporanPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Tanggal Dipinjam : $dateOut",
-                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10),
+                'Tanggal Dipinjam: $dateOut',
+                style: GoogleFonts.poppins(color: const Color(0xFF769DCB), fontSize: 10),
               ),
               Text(
-                "Estimasi Kembali: $dateIn",
-                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 10),
+                'Estimasi Kembali: $dateIn',
+                style: GoogleFonts.poppins(color: const Color(0xFF769DCB), fontSize: 10),
               ),
             ],
           ),

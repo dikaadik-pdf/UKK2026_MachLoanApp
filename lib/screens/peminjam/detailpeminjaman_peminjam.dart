@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/kartu_peminjaman.dart';
@@ -17,6 +16,9 @@ class PeminjamanModel {
   final DateTime tanggalPinjaman;
   final DateTime estimasiPengembalian;
   final int denda;
+  final String kodePeminjaman;
+  final int dendaPerHari;
+  final int terlambat;
 
   PeminjamanModel({
     required this.idPeminjaman,
@@ -27,6 +29,9 @@ class PeminjamanModel {
     required this.tanggalPinjaman,
     required this.estimasiPengembalian,
     required this.denda,
+    required this.kodePeminjaman,
+    required this.dendaPerHari,
+    required this.terlambat,
   });
 }
 
@@ -42,25 +47,59 @@ class PeminjamanPeminjamScreen extends StatefulWidget {
 }
 
 class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
-  String activeFilter = 'Menunggu';
+  String activeFilter = 'menunggu';
   bool isLoading = true;
-
   List<PeminjamanModel> data = [];
+  RealtimeChannel? _channel;
+  final TextEditingController _searchController = TextEditingController();
 
   final Map<String, String> statusMap = {
-    'Menunggu': 'menunggu',
-    'Pengembalian': 'disetujui',
-    'Ditolak': 'ditolak',
-    'Selesai': 'dikembalikan',
+    'menunggu': 'menunggu',
+    'disetujui': 'disetujui',
+    'ditolak': 'ditolak',
+    'dikembalikan': 'dikembalikan',
   };
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _subscribeToRealtimeUpdates();
+  }
+
+  @override
+  void dispose() {
+    _channel?.unsubscribe();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _subscribeToRealtimeUpdates() {
+    _channel?.unsubscribe();
+    _channel = Supabase.instance.client
+        .channel('peminjaman_peminjam_${DateTime.now().millisecondsSinceEpoch}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'peminjaman',
+          callback: (payload) {
+            _loadData();
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'pengembalian',
+          callback: (payload) {
+            _loadData();
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
+
     setState(() => isLoading = true);
 
     try {
@@ -74,14 +113,15 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
           .from('peminjaman')
           .select('''
             id_peminjaman,
+            kode_peminjaman,
             status,
             tanggal_pinjam,
             estimasi_kembali,
             detail_peminjaman!inner(
               jumlah,
-              alat!inner(nama_alat, id_alat)
+              alat!inner(nama_alat, id_alat, denda_per_hari)
             ),
-            pengembalian(tanggal_pengembalian, total_denda)
+            pengembalian(tanggal_pengembalian, total_denda, terlambat)
           ''')
           .eq('id_user', userId)
           .eq('status', statusMap[activeFilter]!)
@@ -99,6 +139,7 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
 
         return PeminjamanModel(
           idPeminjaman: e['id_peminjaman'],
+          kodePeminjaman: e['kode_peminjaman'] ?? '-',
           namaAlat: alat['nama_alat'],
           idAlat: alat['id_alat'],
           jumlah: detail['jumlah'],
@@ -106,13 +147,17 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
           tanggalPinjaman: DateTime.parse(e['tanggal_pinjam']),
           estimasiPengembalian: DateTime.parse(e['estimasi_kembali']),
           denda: pengembalian?['total_denda'] ?? 0,
+          dendaPerHari: alat['denda_per_hari'] ?? 0,
+          terlambat: pengembalian?['terlambat'] ?? 0,
         );
       }).toList();
     } catch (e) {
       debugPrint('ERROR PEMINJAMAN: $e');
     }
 
-    setState(() => isLoading = false);
+    if (mounted) {
+      setState(() => isLoading = false);
+    }
   }
 
   Future<void> _handleKembalikan(PeminjamanModel d) async {
@@ -137,7 +182,7 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
       int totalDenda = 0;
       if (now.isAfter(d.estimasiPengembalian)) {
         daysLate = now.difference(d.estimasiPengembalian).inDays;
-        totalDenda = daysLate * 5000;
+        totalDenda = daysLate * (d.dendaPerHari > 0 ? d.dendaPerHari : 5000);
       }
 
       await SupabaseServices.kembalikanAlat(
@@ -191,279 +236,241 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
     );
   }
 
-  String _fmt(DateTime d) => DateFormat('d/MMM/yy').format(d);
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '-';
+    try {
+      final date = DateTime.parse(dateStr);
+      final months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      ];
+      return '${date.day}/${months[date.month - 1]}/${date.year.toString().substring(2)}';
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return '0';
+    final number = value is int ? value : int.tryParse(value.toString()) ?? 0;
+    return number.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
-      body: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 15),
-          _buildFilter(),
-          if (activeFilter == 'Pengembalian') _buildInfoDenda(),
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 25,
-                      vertical: 10,
-                    ),
-                    itemCount: data.length,
-                    itemBuilder: (context, index) =>
-                        _buildLoanCard(data[index]),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // HEADER
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 45, 20, 25),
-      decoration: const BoxDecoration(
-        color: Color(0xFF769DCB),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'Peminjaman',
-            style: GoogleFonts.poppins(
-              fontSize: 32,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(185),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF769DCB),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(25),
+              bottomRight: Radius.circular(25),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // FILTER
-  Widget _buildFilter() {
-    final filters = ['Menunggu', 'Pengembalian', 'Ditolak', 'Selesai'];
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 25),
-      height: 45,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: filters.map((f) {
-          final isActive = activeFilter == f;
-          return GestureDetector(
-            onTap: () {
-              setState(() => activeFilter = f);
-              _loadData();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF769DCB) : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                f,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  // CARD
-  Widget _buildLoanCard(PeminjamanModel d) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Content utama card
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  d.namaAlat,
-                  style: GoogleFonts.poppins(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                _buildStatusBadge(d),
-                const SizedBox(height: 12),
-                _buildRow('Tanggal Peminjaman', _fmt(d.tanggalPinjaman)),
-                _buildRow(
-                  'Estimasi Pengembalian',
-                  _fmt(d.estimasiPengembalian),
-                ),
-              ],
-            ),
-          ),
-
-          if (activeFilter == 'Pengembalian')
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFF769DCB), // Inner container lebih terang
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(25),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Button Lihat Kartu Pinjam
-                  Flexible(
-                    child: SizedBox(
-                      height: 30,
-                      child: ElevatedButton(
-                        onPressed: () => _handleLihatKartu(d),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF788291),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          elevation: 0,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                          size: 22,
                         ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'Lihat Kartu Pinjam',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Peminjaman',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  // Button Kembalikan
-                  Flexible(
-                    child: SizedBox(
-                      height: 30,
-                      child: ElevatedButton(
-                        onPressed: () => _handleKembalikan(d),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9ACD32),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          elevation: 0,
+                  const SizedBox(height: 20),
+                  Container(
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDBEBFF),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF1F4F6F),
+                        fontSize: 15,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: 'Cari Alat Disini!',
+                        hintStyle: GoogleFonts.poppins(
+                          color: const Color(0xFF1F4F6F).withOpacity(0.5),
+                          fontSize: 15,
                         ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'Kembalikan',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          size: 22,
+                          color: const Color(0xFF1F4F6F).withOpacity(0.7),
                         ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 15),
+          
+          // Filter Bar dengan ScrollView
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            child: Row(
+              children: [
+                Text(
+                  "Filter : ",
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip('menunggu', 'Menunggu'),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('disetujui', 'Pengembalian'),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('ditolak', 'Ditolak'),
+                        const SizedBox(width: 12),
+                        _buildFilterChip('dikembalikan', 'Selesai'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          // Informasi untuk status menunggu
+          if (activeFilter == 'menunggu') _buildInfoPending(),
+
+          // List Content
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : data.isEmpty
+                    ? _buildEmptyState()
+                    : RefreshIndicator(
+                        onRefresh: _loadData,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 25,
+                            vertical: 10,
+                          ),
+                          itemCount: data.length,
+                          itemBuilder: (context, index) =>
+                              _buildLoanCard(data[index]),
+                        ),
+                      ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusBadge(PeminjamanModel d) {
-    if (activeFilter == 'Pengembalian') {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+  Widget _buildFilterChip(String filterValue, String label) {
+    final isSelected = activeFilter == filterValue;
+    return GestureDetector(
+      onTap: () {
+        setState(() => activeFilter = filterValue);
+        _loadData();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFE52510),
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? const Color(0xFF769DCB) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
-          'Denda: ${d.denda}',
+          label,
           style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : const Color(0xFF333333),
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
-      );
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[600]),
+          const SizedBox(height: 16),
+          Text(
+            'Tidak ada data peminjaman',
+            style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Status: ${_getStatusLabel(activeFilter)}',
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getStatusLabel(String status) {
+    switch (status) {
+      case 'menunggu':
+        return 'Menunggu';
+      case 'disetujui':
+        return 'Pengembalian';
+      case 'ditolak':
+        return 'Ditolak';
+      case 'dikembalikan':
+        return 'Selesai';
+      default:
+        return status;
     }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFF769DCB),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        activeFilter == 'Selesai' ? 'Dikembalikan' : activeFilter,
-        style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
-      ),
-    );
   }
 
-  Widget _buildRow(String label, String value) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 130,
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
-          ),
-        ),
-        Text(
-          ': $value',
-          style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoDenda() {
+  Widget _buildInfoPending() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 25, vertical: 5),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFE52510),
@@ -471,16 +478,270 @@ class _PeminjamanPeminjamScreenState extends State<PeminjamanPeminjamScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning, color: Colors.white, size: 16),
-          const SizedBox(width: 8),
+          const Icon(Icons.info_outline, color: Colors.white),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Perhatian Baca Baik Baik!\nSetiap keterlambatan pengembalian maka dikenakan denda sebesar 5000/hari',
+              'Perhatian!\nPeminjaman menunggu persetujuan Petugas dan Jangan Lupa Ingatkan Petugas Untuk Melakukan Pengecekan Peminjaman',
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoanCard(PeminjamanModel d) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(
+        color: const Color(0xFF769DCB),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Content utama
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  d.namaAlat,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'Kode: ${d.kodePeminjaman}',
+                  style: GoogleFonts.poppins(fontSize: 10, color: Colors.white70),
+                ),
+                const SizedBox(height: 10),
+                _buildTextRow('Jumlah', ': ${d.jumlah} unit'),
+                _buildTextRow(
+                  'Tanggal Peminjaman',
+                  ': ${_formatDate(d.tanggalPinjaman.toIso8601String())}',
+                ),
+                _buildTextRow(
+                  'Estimasi Pengembalian',
+                  ': ${_formatDate(d.estimasiPengembalian.toIso8601String())}',
+                ),
+                if (d.terlambat > 0)
+                  _buildTextRow('Keterlambatan', ': ${d.terlambat} hari'),
+                if (d.dendaPerHari > 0 && d.status == 'disetujui')
+                  _buildTextRow(
+                    'Denda/Hari',
+                    ': Rp ${_formatCurrency(d.dendaPerHari)}',
+                  ),
+              ],
+            ),
+          ),
+
+          // Inner child section berdasarkan status
+          _buildInnerChild(d),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInnerChild(PeminjamanModel d) {
+    if (d.status == 'menunggu') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Color(0xFFDBEBFF),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(25),
+          ),
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF769DCB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'Menunggu',
               style: GoogleFonts.poppins(
                 color: Colors.white,
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+          ),
+        ),
+      );
+    } else if (d.status == 'disetujui') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Color(0xFFDBEBFF),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(25),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: SizedBox(
+                height: 30,
+                child: ElevatedButton(
+                  onPressed: () => _handleLihatKartu(d),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF788291),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    elevation: 0,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Lihat Kartu Pinjam',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: SizedBox(
+                height: 30,
+                child: ElevatedButton(
+                  onPressed: () => _handleKembalikan(d),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9ACD32),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    elevation: 0,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Kembalikan',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (d.status == 'ditolak') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Color(0xFFDBEBFF),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(25),
+          ),
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFCE0000),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'Ditolak',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+    } else if (d.status == 'dikembalikan') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: const BoxDecoration(
+          color: Color(0xFFDBEBFF),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(25),
+          ),
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8BB501),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'Dikembalikan',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildTextRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 150,
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 10),
             ),
           ),
         ],

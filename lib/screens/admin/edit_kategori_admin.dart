@@ -63,7 +63,7 @@ class _EditKategoriDialogState extends State<EditKategoriDialog> {
       width: 300,
       height: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFF1F4F6F),
+        color: const Color(0xFFDBEBFF),
         borderRadius: BorderRadius.circular(25),
       ),
       child: TextField(
@@ -72,7 +72,7 @@ class _EditKategoriDialogState extends State<EditKategoriDialog> {
             ? TextCapitalization.characters
             : TextCapitalization.none,
         style: TextStyle(
-          color: Colors.white,
+          color: const Color(0xFF769DCB),
           fontSize: 14,
           letterSpacing: uppercase ? 1.2 : 0,
         ),
@@ -80,7 +80,7 @@ class _EditKategoriDialogState extends State<EditKategoriDialog> {
           border: InputBorder.none,
           hintText: hint,
           hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.3),
+            color: const Color(0xFF769DCB),
             fontSize: 14,
           ),
           contentPadding: const EdgeInsets.symmetric(

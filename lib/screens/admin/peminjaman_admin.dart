@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/kartu_peminjaman.dart';
+import 'package:ukk2026_machloanapp/widgets/notification_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/confirmation_widgets.dart';
 
 class PeminjamanAdminScreen extends StatefulWidget {
   const PeminjamanAdminScreen({Key? key}) : super(key: key);
@@ -161,25 +163,11 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
   Future<void> _handleKembalikan(Map<String, dynamic> data) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Konfirmasi', style: GoogleFonts.poppins()),
-        content: Text(
-          'Apakah Anda yakin ingin mengembalikan alat ini?',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Kembalikan',
-              style: GoogleFonts.poppins(color: Colors.green),
-            ),
-          ),
-        ],
+      builder: (context) => ConfirmationDialog(
+        title: 'Konfirmasi',
+        subtitle: 'Apakah Anda yakin ingin mengembalikan alat ini?',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
       ),
     );
 
@@ -233,13 +221,12 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Peminjaman berhasil dikembalikan!',
-            style: GoogleFonts.poppins(),
-          ),
-          backgroundColor: Colors.green,
+      await showDialog(
+        context: context,
+        builder: (context) => SuccessDialog(
+          title: 'Berhasil!',
+          subtitle: 'Peminjaman berhasil dikembalikan',
+          onOk: () => Navigator.pop(context),
         ),
       );
     } catch (e) {
@@ -815,22 +802,11 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
   Future<void> _showDeleteConfirmation(int idPeminjaman) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus Riwayat', style: GoogleFonts.poppins()),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus riwayat peminjaman ini? Data yang sudah dihapus tidak dapat dikembalikan.',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Hapus', style: GoogleFonts.poppins(color: Colors.red)),
-          ),
-        ],
+      builder: (context) => ConfirmationDialog(
+        title: 'Hapus Riwayat',
+        subtitle: 'Apakah Anda yakin ingin menghapus riwayat peminjaman ini? Data yang sudah dihapus tidak dapat dikembalikan.',
+        onBack: () => Navigator.pop(context, false),
+        onContinue: () => Navigator.pop(context, true),
       ),
     );
 
@@ -855,10 +831,12 @@ class _PeminjamanAdminScreenState extends State<PeminjamanAdminScreen> {
         });
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Riwayat peminjaman berhasil dihapus'),
-              backgroundColor: Colors.green,
+          await showDialog(
+            context: context,
+            builder: (context) => SuccessDialog(
+              title: 'Berhasil!',
+              subtitle: 'Riwayat peminjaman berhasil dihapus',
+              onOk: () => Navigator.pop(context),
             ),
           );
           _loadPeminjamanData();

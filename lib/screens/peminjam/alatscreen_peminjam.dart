@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ukk2026_machloanapp/widgets/searchbar_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/appbar_widgets.dart';
 import 'package:ukk2026_machloanapp/screens/peminjam/listalatscreen_peminjam.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -78,6 +78,25 @@ class _AlatScreenPeminjamState extends State<AlatScreenPeminjam> {
     }
   }
 
+  Future<void> _searchKategori(String keyword) async {
+    try {
+      if (keyword.trim().isEmpty) {
+        _loadKategori();
+        return;
+      }
+
+      final data = await SupabaseServices.searchKategori(keyword);
+
+      if (mounted) {
+        setState(() {
+          _kategoriList = data;
+        });
+      }
+    } catch (e) {
+      debugPrint('Search error: $e');
+    }
+  }
+
   IconData _getIconForKategori(String namaKategori) {
     final lower = namaKategori.toLowerCase();
     if (_iconMap.containsKey(lower)) return _iconMap[lower]!;
@@ -91,130 +110,131 @@ class _AlatScreenPeminjamState extends State<AlatScreenPeminjam> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
-      body: Column(
-        children: [
-          // HEADER
-          Container(
-            width: double.infinity,
-            height: 120,
-            decoration: const BoxDecoration(
-              color: Color(0xFF769DCB),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+      appBar: CustomAppBarWithSearch(
+        title: 'Alat',
+        searchController: _searchController,
+        searchHintText: 'Cari Alat Disini!',
+        onSearchChanged: _searchKategori,
+        showBackButton: true,
+      ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF769DCB),
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Daftar Alat',
-                    style: GoogleFonts.poppins(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 25,
-                      vertical: 30,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CustomSearchBar(
-                          controller: _searchController,
-                          hintText: 'Cari Alat Disini!',
+            )
+          : _kategoriList.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(40.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.category_outlined,
+                        size: 80,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada kategori',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
                         ),
-                        const SizedBox(height: 25),
-                        Text(
-                          'Kategori Alat',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1F4F6F),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Kategori alat belum tersedia',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(25, 20, 25, 20),
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 20,
+                      mainAxisSpacing: 20,
+                      mainAxisExtent: 185,
+                    ),
+                    itemCount: _kategoriList.length,
+                    itemBuilder: (context, index) {
+                      final kategori = _kategoriList[index];
+                      return _buildCategoryCard(
+                        context,
+                        _getIconForKategori(
+                          kategori['nama_kategori'],
+                        ),
+                        kategori['nama_kategori'],
+                        kategori['id_kategori'],
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AlatListPeminjam(
+                              username: widget.username,
+                              idKategori: kategori['id_kategori'],
+                              namaKategori: kategori['nama_kategori'],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 15),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _kategoriList.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 20,
-                                mainAxisSpacing: 20,
-                              ),
-                          itemBuilder: (context, index) {
-                            final kategori = _kategoriList[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => AlatListPeminjam(
-                                      username: widget.username,
-                                      idKategori: kategori['id_kategori'],
-                                      namaKategori: kategori['nama_kategori'],
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1F4F6F),
-                                  borderRadius: BorderRadius.circular(25),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _getIconForKategori(
-                                        kategori['nama_kategori'],
-                                      ),
-                                      size: 70,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      kategori['nama_kategori'],
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-          ),
-        ],
+                ),
+    );
+  }
+
+  Widget _buildCategoryCard(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int idKategori,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 185,
+        decoration: BoxDecoration(
+          color: const Color(0xFF769DCB),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 65, color: Colors.white),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

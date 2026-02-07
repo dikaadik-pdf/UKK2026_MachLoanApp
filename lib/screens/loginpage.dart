@@ -173,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
             style: GoogleFonts.poppins(
               fontSize: 21,
               fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
+              color: const Color(0xFF769DCB),
             ),
           ),
           const SizedBox(height: 5),
@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'Part Of',
             style: GoogleFonts.poppins(
               fontSize: 15,
-              color: AppColors.textPrimary,
+              color: const Color(0xFF769DCB),
             ),
           ),
           const SizedBox(height: 5),
@@ -190,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
             style: GoogleFonts.poppins(
               fontSize: 23,
               fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
+              color: const Color(0xFF769DCB),
             ),
           ),
         ],
@@ -244,7 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.white70,
+                    color: const Color(0xFF769DCB),
                   ),
                   onPressed: () =>
                       setState(() => _obscurePassword = !_obscurePassword),
@@ -266,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: const Color(0xFF769DCB),
                         ),
                       )
                     : Text(
@@ -323,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
           height: 60,
           margin: const EdgeInsets.only(top: 10),
           decoration: BoxDecoration(
-            color: AppColors.innerContainer,
+            color: const Color(0xFFDBEBFF),
             borderRadius: BorderRadius.circular(50),
           ),
           child: TextFormField(
@@ -331,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen> {
             obscureText: obscure,
             autovalidateMode: AutovalidateMode.disabled,
             validator: validator,
-            style: GoogleFonts.poppins(color: Colors.white),
+            style: GoogleFonts.poppins(color: const Color(0xFF769DCB),),
             onTap: () {
               // Tandai field ini sudah pernah di-tap
               if (!_touchedFields.contains(fieldName)) {
@@ -347,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
             },
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: GoogleFonts.poppins(color: Colors.white60),
+              hintStyle: GoogleFonts.poppins(color: const Color(0xFF769DCB)),
               border: InputBorder.none,
               errorStyle: const TextStyle(height: 0, fontSize: 0),
               contentPadding: const EdgeInsets.symmetric(

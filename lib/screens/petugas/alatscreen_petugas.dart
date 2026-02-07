@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ukk2026_machloanapp/widgets/searchbar_widgets.dart';
+import 'package:ukk2026_machloanapp/widgets/appbar_widgets.dart';
 import 'package:ukk2026_machloanapp/screens/petugas/listalat_petugas.dart';
 import 'package:ukk2026_machloanapp/services/supabase_services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,15 +16,11 @@ class AlatScreenPetugas extends StatefulWidget {
 
 class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
   final TextEditingController _searchController = TextEditingController();
-
-
-  List<Map<String, dynamic>> _allKategoriList = [];
   List<Map<String, dynamic>> _kategoriList = [];
-
   bool _loading = true;
   RealtimeChannel? _kategoriChannel;
 
-  // Icon berdasarkan nama kategori
+  // Map icon berdasarkan nama kategori atau prefix
   final Map<String, IconData> _iconMap = {
     'alat tangan': Icons.handyman_rounded,
     'tangan': Icons.handyman_rounded,
@@ -55,57 +51,55 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     super.dispose();
   }
 
-  // REALTIME
   void _setupRealtimeSubscription() {
     _kategoriChannel = SupabaseServices.subscribeToKategori((data) {
-      if (!mounted) return;
-      setState(() {
-        _allKategoriList = data;
-        _kategoriList = data;
-      });
-    });
-  }
-
-
-  // LOAD DATA
-  Future<void> _loadKategori() async {
-    try {
-      setState(() => _loading = true);
-      final data = await SupabaseServices.getKategori();
-      if (!mounted) return;
-
-      setState(() {
-        _allKategoriList = data;
-        _kategoriList = data;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  // SEARCH KATEGORI 
-  void _searchKategori(String query) {
-    final lowerQuery = query.toLowerCase();
-
-    setState(() {
-      if (query.isEmpty) {
-        _kategoriList = _allKategoriList;
-      } else {
-        _kategoriList = _allKategoriList.where((kategori) {
-          final nama = kategori['nama_kategori'].toString().toLowerCase();
-          return nama.contains(lowerQuery);
-        }).toList();
+      if (mounted) {
+        setState(() {
+          _kategoriList = data;
+        });
       }
     });
   }
 
+  Future<void> _loadKategori() async {
+    try {
+      setState(() => _loading = true);
+      final data = await SupabaseServices.getKategori();
+      if (mounted) {
+        setState(() {
+          _kategoriList = data;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
-  // ICON HELPER
+  Future<void> _searchKategori(String keyword) async {
+    try {
+      if (keyword.trim().isEmpty) {
+        _loadKategori();
+        return;
+      }
+
+      final data = await SupabaseServices.searchKategori(keyword);
+
+      if (mounted) {
+        setState(() {
+          _kategoriList = data;
+        });
+      }
+    } catch (e) {
+      debugPrint('Search error: $e');
+    }
+  }
+
   IconData _getIconForKategori(String namaKategori) {
     final lowerName = namaKategori.toLowerCase();
 
@@ -114,7 +108,7 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     }
 
     for (var key in _iconMap.keys) {
-      if (lowerName.contains(key)) {
+      if (lowerName.contains(key) || key.contains(lowerName)) {
         return _iconMap[key]!;
       }
     }
@@ -122,159 +116,105 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
     return _iconMap['default']!;
   }
 
-  // UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFD9D9D9),
-      body: Column(
-        children: [
-          // HEADER
-          Container(
-            width: double.infinity,
-            height: 120,
-            decoration: const BoxDecoration(
-              color: Color(0xFF769DCB),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+      appBar: CustomAppBarWithSearch(
+        title: 'Alat',
+        searchController: _searchController,
+        searchHintText: 'Cari Alat Disini!',
+        onSearchChanged: _searchKategori,
+        showBackButton: true,
+      ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF769DCB),
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 35, 20, 20),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Daftar Alat',
-                    style: GoogleFonts.poppins(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // CONTENT
-          Expanded(
-            child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF1F4F6F)),
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 25,
-                      vertical: 30,
-                    ),
-                    child: Column(
-                      children: [
-                        // SEARCH
-                        CustomSearchBar(
-                          controller: _searchController,
-                          hintText: 'Cari Alat Disini!',
-                          onChanged: _searchKategori,
+            )
+          : _kategoriList.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(40.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.category_outlined,
+                        size: 80,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada kategori',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
                         ),
-
-                        const SizedBox(height: 25),
-
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Kategori Alat',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1F4F6F),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Kategori alat belum tersedia',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(25, 20, 25, 20),
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 20,
+                      mainAxisSpacing: 20,
+                      mainAxisExtent: 185,
+                    ),
+                    itemCount: _kategoriList.length,
+                    itemBuilder: (context, index) {
+                      final kategori = _kategoriList[index];
+                      return _buildCategoryCard(
+                        context,
+                        _getIconForKategori(
+                          kategori['nama_kategori'],
+                        ),
+                        kategori['nama_kategori'],
+                        kategori['id_kategori'],
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AlatListPetugas(
+                              username: widget.username,
+                              idKategori: kategori['id_kategori'],
+                              namaKategori: kategori['nama_kategori'],
                             ),
                           ),
                         ),
-
-                        const SizedBox(height: 15),
-
-                        // GRID
-                        _kategoriList.isEmpty
-                            ? Column(
-                                children: [
-                                  Icon(
-                                    Icons.category_outlined,
-                                    size: 80,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Belum ada kategori',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 20,
-                                      mainAxisSpacing: 20,
-                                    ),
-                                itemCount: _kategoriList.length,
-                                itemBuilder: (context, index) {
-                                  final kategori = _kategoriList[index];
-                                  return _buildCategoryCard(
-                                    context,
-                                    _getIconForKategori(
-                                      kategori['nama_kategori'],
-                                    ),
-                                    kategori['nama_kategori'],
-                                    () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => AlatListPetugas(
-                                          username: widget.username,
-                                          idKategori: kategori['id_kategori'],
-                                          namaKategori:
-                                              kategori['nama_kategori'],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-          ),
-        ],
-      ),
+                ),
     );
   }
 
- 
-  // CARD
   Widget _buildCategoryCard(
     BuildContext context,
     IconData icon,
     String label,
+    int idKategori,
     VoidCallback onTap,
   ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        height: 185,
         decoration: BoxDecoration(
-          color: const Color(0xFF1F4F6F),
+          color: const Color(0xFF769DCB),
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -287,20 +227,20 @@ class _AlatScreenPetugasState extends State<AlatScreenPetugas> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 80, color: const Color(0xFFD9D9D9)),
-            const SizedBox(height: 12),
+            Icon(icon, size: 65, color: Colors.white),
+            const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
                 label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

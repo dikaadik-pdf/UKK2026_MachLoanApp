@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -105,6 +106,10 @@ class _LoanCardScreenState extends State<LoanCardScreen> {
     try {
       final pdf = pw.Document();
 
+      // Load logo dari asset
+      final logoImage = await rootBundle.load('assets/images/mechloan.png');
+      final logoBytes = logoImage.buffer.asUint8List();
+
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
@@ -113,7 +118,7 @@ class _LoanCardScreenState extends State<LoanCardScreen> {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                // Header
+                // Header dengan Logo
                 pw.Container(
                   width: double.infinity,
                   padding: const pw.EdgeInsets.all(20),
@@ -121,32 +126,45 @@ class _LoanCardScreenState extends State<LoanCardScreen> {
                     color: PdfColors.blue300,
                     borderRadius: pw.BorderRadius.circular(15),
                   ),
-                  child: pw.Column(
+                  child: pw.Row(
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
-                      pw.Text(
-                        'KARTU PEMINJAMAN',
-                        style: pw.TextStyle(
-                          fontSize: 24,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.white,
-                        ),
+                      pw.Image(
+                        pw.MemoryImage(logoBytes),
+                        width: 50,
+                        height: 50,
                       ),
-                      pw.SizedBox(height: 5),
-                      pw.Text(
-                        'ALAT TEKNIK MESIN (MACHLOAN)',
-                        style: pw.TextStyle(
-                          fontSize: 24,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.white,
-                        ),
-                      ),
-                      pw.SizedBox(height: 5),
-                      pw.Text(
-                        'SMKS BRANTAS KARANGKATES',
-                        style: const pw.TextStyle(
-                          fontSize: 14,
-                          color: PdfColors.white,
+                      pw.SizedBox(width: 16),
+                      pw.Expanded(
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.center,
+                          children: [
+                            pw.Text(
+                              'KARTU PEMINJAMAN',
+                              style: pw.TextStyle(
+                                fontSize: 24,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                            pw.SizedBox(height: 5),
+                            pw.Text(
+                              'ALAT TEKNIK MESIN (MACHLOAN)',
+                              style: pw.TextStyle(
+                                fontSize: 18,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                            pw.SizedBox(height: 5),
+                            pw.Text(
+                              'SMKS BRANTAS KARANGKATES',
+                              style: const pw.TextStyle(
+                                fontSize: 14,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -357,7 +375,7 @@ class _LoanCardScreenState extends State<LoanCardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 25),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF2C5F7F),
+          color: const Color(0xFF769DCB),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -366,14 +384,14 @@ class _LoanCardScreenState extends State<LoanCardScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
               decoration: const BoxDecoration(
-                color: Color(0xFF5A8AB5),
+                color: Color(0xFFDBEBFF),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
                   // Logo tanpa container wrapper
                   Image.asset(
-                    'assets/images/machloanputih.png',
+                    'assets/images/mechloan.png',
                     width: 40,
                     height: 40,
                   ),
@@ -381,7 +399,7 @@ class _LoanCardScreenState extends State<LoanCardScreen> {
                   Text(
                     'Kartu Peminjaman',
                     style: GoogleFonts.poppins(
-                      color: Colors.white,
+                      color: const Color(0xFF769DCB),
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
